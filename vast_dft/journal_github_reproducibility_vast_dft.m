@@ -42,35 +42,35 @@ addpath(fullfile(pwd,'subcodes'))
 % Initialization
 datafilename = 'srir_fs16kHz_vast_dft__rir_generator.mat';
 
-srir = load(fullfile(pwd,'rirdata',datafilename));
+simulator_room_impulse_response = load(fullfile(pwd,'rirdata',datafilename));
 
 
 % Processing details
-general = srir.general;
+general = simulator_room_impulse_response.general;
 
 % Array geometry
-array = srir.array;
+array = simulator_room_impulse_response.array;
 
 % Room
-room = srir.room;
+room = simulator_room_impulse_response.room;
 
 % Zone
-zone = srir.zone;
+zone = simulator_room_impulse_response.zone;
 
 % Simulated room impulse responses (RIRs) by the rir_generator
 % Note that rir_generator can be downloaded from the following link:
 % https://www.audiolabs-erlangen.de/fau/professor/habets/software/rir-generator
 % https://github.com/ehabets/RIR-Generator
-irMeasured = srir.irMeasured;
+irMeasured = simulator_room_impulse_response.irMeasured;
 
 % The impulse response of the virtual source
 % This is the RIR of the 8th loudspeaker in irMeasured
-irVirsrc = srir.irVirsrc;
+irVirsrc = simulator_room_impulse_response.irVirsrc;
 
 % Some variables
-varout = srir.varout;
+varout = simulator_room_impulse_response.varout;
 
-clear srir
+clear simulator_room_impulse_response
 
 %%
 % System geometry illustrated in Fig. 4
