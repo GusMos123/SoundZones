@@ -79,7 +79,7 @@ clear simulator_room_impulse_response
 showSystemGeometry(array,zone,room)
 
 % Initialize control filters
-control_filter = getCtrfilt(general, varout);
+control_filter = get_control_filter(general, varout);
 targetdB = -10;
 for jj = general.idx.vast_nf:general.idx.vast_t
     control_filter{jj}.cvxopt_properties.findopt = false;
