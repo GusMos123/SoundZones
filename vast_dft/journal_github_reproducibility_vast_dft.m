@@ -36,6 +36,8 @@
 %% Initialization
 close all;clear;clc
 
+% hej hej
+
 % Add paths for relevant files
 addpath(fullfile(pwd,'subcodes'))
 
