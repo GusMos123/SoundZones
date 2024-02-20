@@ -22,10 +22,10 @@ nzones = zone.number;
 nloudspks = array.numLoudspk;
 nctrpts = zone.numCtrPtsBr;
 
-if ctrfilter.incl_dcnyq
-    general.incl_dcnyq = true;
+if ctrfilter.include_dc_and_nyqvist_frequencies
+    general.include_dc_and_nyqvist_frequencies = true;
 else
-    general.incl_dcnyq = false;
+    general.include_dc_and_nyqvist_frequencies = false;
 end
 
 [Hml, Dm, hml, dm] = getTransfcn(general,array,zone,rirs,drirs);

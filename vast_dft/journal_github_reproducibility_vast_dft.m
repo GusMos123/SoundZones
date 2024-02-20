@@ -51,23 +51,23 @@ simulator_room_impulse_response = load(fullfile(pwd,'rirdata',datafilename));
 general = simulator_room_impulse_response.general;
 
 % Array geometry
-array = simulator_room_impulse_response.array;
+loudspeaker_array = simulator_room_impulse_response.array;
 
 % Room
 room = simulator_room_impulse_response.room;
 
 % Zone
-zone = simulator_room_impulse_response.zone;
+zones = simulator_room_impulse_response.zone;
 
 % Simulated room impulse responses (RIRs) by the rir_generator
 % Note that rir_generator can be downloaded from the following link:
 % https://www.audiolabs-erlangen.de/fau/professor/habets/software/rir-generator
 % https://github.com/ehabets/RIR-Generator
-irMeasured = simulator_room_impulse_response.irMeasured;
+impulse_response_measured = simulator_room_impulse_response.irMeasured;
 
 % The impulse response of the virtual source
 % This is the RIR of the 8th loudspeaker in irMeasured
-irVirsrc = simulator_room_impulse_response.irVirsrc;
+impulse_response_virtual_score = simulator_room_impulse_response.irVirsrc;
 
 % Some variables
 varout = simulator_room_impulse_response.varout;
@@ -76,7 +76,7 @@ clear simulator_room_impulse_response
 
 %%
 % System geometry illustrated in Fig. 4
-showSystemGeometry(array,zone,room)
+showSystemGeometry(loudspeaker_array,zones,room)
 
 % Initialize control filters
 control_filter = get_control_filter(general, varout);
@@ -92,24 +92,24 @@ end
 
 % Initialization process for Sec. V-E
 cutlength = general.lenConFilter;
-[irMeasured_cut, irVirsrc_cut] = cutRIRs(general, varout, cutlength, ...
-    irMeasured, irVirsrc);
+[impulse_response_measured_cut, impulse_response_virtual_source_cut] = cutRIRs(general, varout, cutlength, ...
+    impulse_response_measured, impulse_response_virtual_score);
 
 iscuttrue = false;
 if iscuttrue
-    mrirs = irMeasured_cut;
-    drirs = irVirsrc_cut;
+    measured_room_impulse_responses = impulse_response_measured_cut;
+    desired_room_impulse_responses = impulse_response_virtual_source_cut;
 else
-    mrirs = irMeasured;
-    drirs = irVirsrc;
+    measured_room_impulse_responses = impulse_response_measured;
+    desired_room_impulse_responses = impulse_response_virtual_score;
 end
 
 
 % Initialization for VAST-NF
 % 1 kHz
-taroption.taridx = 16;
-taroption.tarfreq = (taroption.taridx-1)*varout.dF;
-taroption.journal_exp_1 = false;
+target_options.target_index = 16;
+target_options.target_frequency = (target_options.target_index-1)*varout.dF;
+target_options.journal_exp_1 = false;
 
 
 % Initialization for strings in figures
@@ -140,13 +140,13 @@ bgc = [1,1,1,0.8];
 % Therefore, Figs. 5, 6, and 8 will be plotted.
 % ------------------------------------------------------------------ Note %
 close all
-exp1_ctrfilt = control_filter{general.idx.vast_nf};
-exp1_taroption = taroption;
-exp1_taroption.journal_exp_1 = true;
-exp1_ctrfilt.incl_dcnyq = true;
+experiment_1_control_filter = control_filter{general.idx.vast_nf};
+experiment_1_target_options = target_options;
+experiment_1_target_options.journal_exp_1 = true;
+experiment_1_control_filter.include_dc_and_nyqvist_frequencies = true;
 
 % VAST-NF
-calculatefVAST(general, array, zone, exp1_ctrfilt, mrirs, drirs, [], 'narrow', exp1_taroption);
+calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, measured_room_impulse_responses, desired_room_impulse_responses, [], 'narrow', experiment_1_target_options);
 
 
 %%
@@ -178,10 +178,10 @@ for ii = 1:length(exp2nre_ctrfilt)
 end
 
 % VAST-NF
-[exp2nre_ctrfilt{1}, exp2_pfm_vast_nf] = calculatefVAST(general, array, zone, exp2nre_ctrfilt{1}, mrirs, drirs, [], 'narrow', exp2_taroption);
+[exp2nre_ctrfilt{1}, exp2_pfm_vast_nf] = calculatefVAST(general, loudspeaker_array, zones, exp2nre_ctrfilt{1}, measured_room_impulse_responses, desired_room_impulse_responses, [], 'narrow', exp2_taroption);
 
 % VAST-BF
-[exp2nre_ctrfilt{2}, exp2_pfm_vast_bf] = calculatefVAST(general, array, zone, exp2nre_ctrfilt{2}, mrirs, drirs, [], 'broadindi', exp2_taroption);
+[exp2nre_ctrfilt{2}, exp2_pfm_vast_bf] = calculatefVAST(general, loudspeaker_array, zones, exp2nre_ctrfilt{2}, measured_room_impulse_responses, desired_room_impulse_responses, [], 'broadindi', exp2_taroption);
 
 close all
 general.legendnames = {'VAST-NF', 'VAST-BF'}';
@@ -251,11 +251,11 @@ for kidx = 1:length(can_V)
     exp2p_nre_ctrfilt{2}.V = can_V(kidx);
     
     [exp2p_nre_ctrfilt{1}, exp2p_pfm_vast_nf{kidx}] = ...
-        calculatefVAST(general, array, zone, exp2p_nre_ctrfilt{1}, ...
-        mrirs, drirs, [], 'narrow', exp2p_taroption);
+        calculatefVAST(general, loudspeaker_array, zones, exp2p_nre_ctrfilt{1}, ...
+        measured_room_impulse_responses, desired_room_impulse_responses, [], 'narrow', exp2p_taroption);
     [exp2p_nre_ctrfilt{2}, exp2p_pfm_vast_bf{kidx}] = ...
-        calculatefVAST(general, array, zone, exp2p_nre_ctrfilt{2}, ...
-        mrirs, drirs, [], 'broadindi', exp2p_taroption);
+        calculatefVAST(general, loudspeaker_array, zones, exp2p_nre_ctrfilt{2}, ...
+        measured_room_impulse_responses, desired_room_impulse_responses, [], 'broadindi', exp2p_taroption);
     
     costfunction_vs_subspacerank_mu1(kidx,1) = ...
         sum(exp2p_pfm_vast_nf{kidx}.sde{1} + exp2p_pfm_vast_nf{kidx}.re{1});
@@ -292,11 +292,11 @@ for kidx = 1:length(can_V)
     exp2p2_nre_ctrfilt{2}.V = can_V(kidx);
     
     [exp2p2_nre_ctrfilt{1}, exp2p2_pfm_vast_nf{kidx}] = ...
-        calculatefVAST(general, array, zone, exp2p2_nre_ctrfilt{1}, ...
-        mrirs, drirs, [], 'narrow', exp2p_taroption);
+        calculatefVAST(general, loudspeaker_array, zones, exp2p2_nre_ctrfilt{1}, ...
+        measured_room_impulse_responses, desired_room_impulse_responses, [], 'narrow', exp2p_taroption);
     [exp2p2_nre_ctrfilt{2}, exp2p2_pfm_vast_bf{kidx}] = ...
-        calculatefVAST(general, array, zone, exp2p2_nre_ctrfilt{2}, ...
-        mrirs, drirs, [], 'broadindi', exp2p_taroption);
+        calculatefVAST(general, loudspeaker_array, zones, exp2p2_nre_ctrfilt{2}, ...
+        measured_room_impulse_responses, desired_room_impulse_responses, [], 'broadindi', exp2p_taroption);
     
     muopt{kidx,1} = exp2p2_nre_ctrfilt{1}.cvxopt_properties.optpara;
     muopt{kidx,2} = repmat(exp2p2_nre_ctrfilt{2}.cvxopt_properties.optpara,varout.Kbins,1);
@@ -360,15 +360,15 @@ for ii = 1:length(exp3_ctrfilt)
 end
 
 % VAST-NF
-[exp3_ctrfilt{1}, exp3_pfm_vast_nf] = calculatefVAST(general, array, zone, exp3_ctrfilt{1}, irMeasured_cut, irVirsrc_cut, [], 'narrow', exp3_taroption);
+[exp3_ctrfilt{1}, exp3_pfm_vast_nf] = calculatefVAST(general, loudspeaker_array, zones, exp3_ctrfilt{1}, impulse_response_measured_cut, impulse_response_virtual_source_cut, [], 'narrow', exp3_taroption);
 
 % VAST-BF
-[exp3_ctrfilt{2}, exp3_pfm_vast_bf] = calculatefVAST(general, array, zone, exp3_ctrfilt{2}, irMeasured_cut, irVirsrc_cut, [], 'broadindi', exp3_taroption);
+[exp3_ctrfilt{2}, exp3_pfm_vast_bf] = calculatefVAST(general, loudspeaker_array, zones, exp3_ctrfilt{2}, impulse_response_measured_cut, impulse_response_virtual_source_cut, [], 'broadindi', exp3_taroption);
 
 general.lenInput = general.lenSegment;
 [~, ~, exp3_ctrfilt{3}.conFilter] = ...
-    getVASTcontrolfilter(general, zone, array, irMeasured_cut, irVirsrc_cut, 0, true, exp3_ctrfilt{3});
-[~, exp3_pfm_vast_t] = calculatefVAST(general, array, zone, exp3_ctrfilt{3}, irMeasured_cut, irVirsrc_cut, [],'time', exp3_taroption);
+    getVASTcontrolfilter(general, zones, loudspeaker_array, impulse_response_measured_cut, impulse_response_virtual_source_cut, 0, true, exp3_ctrfilt{3});
+[~, exp3_pfm_vast_t] = calculatefVAST(general, loudspeaker_array, zones, exp3_ctrfilt{3}, impulse_response_measured_cut, impulse_response_virtual_source_cut, [],'time', exp3_taroption);
 
 close all
 labels_oac.titletext = ['oAC_mu' num2str(exp3_ctrfilt{1}.mu) '_Vall'];
@@ -401,8 +401,8 @@ pmtplot_all(general, nre_all, [], labels_nre)
 cc = {'r','g','b'};
 ll = {'-','--',':'};
 lw = [4,3,2];
-array.virsrcpos = 8;
-linidx = (array.virsrcpos-1)*general.lenConFilter + (1:general.lenConFilter);
+loudspeaker_array.virsrcpos = 8;
+linidx = (loudspeaker_array.virsrcpos-1)*general.lenConFilter + (1:general.lenConFilter);
 
 
 str1 = [str_ref(:)', {[str_ref1 '12.']}];
@@ -418,7 +418,7 @@ box on
 grid minor
 set(gca,'XTick',[1 50 100 150 200 240])
 hold off
-title(['at the ' num2str(array.virsrcpos) 'th loudspeaker'])
+title(['at the ' num2str(loudspeaker_array.virsrcpos) 'th loudspeaker'])
 legendhitcallback
 xlim([1 general.lenConFilter])
 xlabel('Filter coefficient')
@@ -450,9 +450,9 @@ for ii = 1:length(exp4_ctrfilt)
     exp4_ctrfilt{ii}.mu = 1;
     exp4_ctrfilt{ii}.incl_dcnyq = true;
 end
-[exp4_ctrfilt{1}, exp4_pfm_vast_nf] = calculatefVAST(general, array, zone, exp4_ctrfilt{1}, irMeasured, irVirsrc, [], 'narrow', exp4_taroption);
+[exp4_ctrfilt{1}, exp4_pfm_vast_nf] = calculatefVAST(general, loudspeaker_array, zones, exp4_ctrfilt{1}, impulse_response_measured, impulse_response_virtual_score, [], 'narrow', exp4_taroption);
 
-SZG = SubspaceSZG(irVirsrc,irMeasured,general.fs);
+SZG = SubspaceSZG(impulse_response_virtual_score,impulse_response_measured,general.fs);
 SZG.computeStatistics(general.lenConFilter,[],'WHITE');
 
 pmdirec_inf = cell(2,1);
@@ -484,7 +484,7 @@ for ii = 1:binlength
     indata{2} = indata{1};
     
     pfm_mtx = getPerformanceMetrics_v2...
-        (general, array, zone, varout, exp4_ctrfilt, indata, mrirs);
+        (general, loudspeaker_array, zones, varout, exp4_ctrfilt, indata, measured_room_impulse_responses);
     
     for jj = 1:general.nmethods
         oac(ii,jj) = pfm_mtx.ctr.ac_mtx{jj,1}.scores;
