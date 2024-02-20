@@ -79,15 +79,15 @@ clear simulator_room_impulse_response
 showSystemGeometry(array,zone,room)
 
 % Initialize control filters
-ctrfilt = getCtrfilt(general, varout);
+control_filter = getCtrfilt(general, varout);
 targetdB = -10;
 for jj = general.idx.vast_nf:general.idx.vast_t
-    ctrfilt{jj}.cvxopt_properties.findopt = false;
-    ctrfilt{jj}.cvxopt_properties.opttype = 'min_sd';
-    ctrfilt{jj}.cvxopt_properties.const = 'nsb';
-    ctrfilt{jj}.cvxopt_properties.tarval = 10^(targetdB/10);
-    ctrfilt{jj}.mu = 1;
-    ctrfilt{jj}.V = ctrfilt{jj}.Vmax;
+    control_filter{jj}.cvxopt_properties.findopt = false;
+    control_filter{jj}.cvxopt_properties.opttype = 'min_sd';
+    control_filter{jj}.cvxopt_properties.const = 'nsb';
+    control_filter{jj}.cvxopt_properties.tarval = 10^(targetdB/10);
+    control_filter{jj}.mu = 1;
+    control_filter{jj}.V = control_filter{jj}.Vmax;
 end
 
 % Initialization process for Sec. V-E
@@ -140,7 +140,7 @@ bgc = [1,1,1,0.8];
 % Therefore, Figs. 5, 6, and 8 will be plotted.
 % ------------------------------------------------------------------ Note %
 close all
-exp1_ctrfilt = ctrfilt{general.idx.vast_nf};
+exp1_ctrfilt = control_filter{general.idx.vast_nf};
 exp1_taroption = taroption;
 exp1_taroption.journal_exp_1 = true;
 exp1_ctrfilt.incl_dcnyq = true;
@@ -162,8 +162,8 @@ calculatefVAST(general, array, zone, exp1_ctrfilt, mrirs, drirs, [], 'narrow', e
 % ------------------------------------------------------------------ Note %
 
 exp2nre_ctrfilt = cell(2,1);
-exp2nre_ctrfilt{1} = ctrfilt{general.idx.vast_nf};
-exp2nre_ctrfilt{2} = ctrfilt{general.idx.vast_bf};
+exp2nre_ctrfilt{1} = control_filter{general.idx.vast_nf};
+exp2nre_ctrfilt{2} = control_filter{general.idx.vast_bf};
 exp2_taroption.journal_exp_1 = false;
 
 % Target dB of the constraint
@@ -232,8 +232,8 @@ text(110,-24,str1,'BackgroundColor',bgc)
 
 % mu = 1, a fixed value
 exp2p_nre_ctrfilt = cell(2,1);
-exp2p_nre_ctrfilt{1} = ctrfilt{general.idx.vast_nf};
-exp2p_nre_ctrfilt{2} = ctrfilt{general.idx.vast_bf};
+exp2p_nre_ctrfilt{1} = control_filter{general.idx.vast_nf};
+exp2p_nre_ctrfilt{2} = control_filter{general.idx.vast_bf};
 exp2p_taroption.journal_exp_1 = false;
 for ii = 1:length(exp2p_nre_ctrfilt)
     exp2p_nre_ctrfilt{ii}.incl_dcnyq = true;
@@ -266,8 +266,8 @@ for kidx = 1:length(can_V)
 end
 
 exp2p2_nre_ctrfilt = cell(2,1);
-exp2p2_nre_ctrfilt{1} = ctrfilt{general.idx.vast_nf};
-exp2p2_nre_ctrfilt{2} = ctrfilt{general.idx.vast_bf};
+exp2p2_nre_ctrfilt{1} = control_filter{general.idx.vast_nf};
+exp2p2_nre_ctrfilt{2} = control_filter{general.idx.vast_bf};
 tdB = -37;
 for ii = 1:length(exp2p2_nre_ctrfilt)
     exp2p2_nre_ctrfilt{ii}.incl_dcnyq = true;
@@ -350,9 +350,9 @@ text(150,10,str1,'BackgroundColor',bgc)
 general.legendnames = {'VAST-NF', 'VAST-BF', 'VAST-T'}';
 
 exp3_ctrfilt = cell(length(general.legendnames),1);
-exp3_ctrfilt{1} = ctrfilt{general.idx.vast_nf};
-exp3_ctrfilt{2} = ctrfilt{general.idx.vast_bf};
-exp3_ctrfilt{3} = ctrfilt{general.idx.vast_t};
+exp3_ctrfilt{1} = control_filter{general.idx.vast_nf};
+exp3_ctrfilt{2} = control_filter{general.idx.vast_bf};
+exp3_ctrfilt{3} = control_filter{general.idx.vast_t};
 exp3_taroption.journal_exp_1 = false;
 for ii = 1:length(exp3_ctrfilt)
     exp3_ctrfilt{ii}.V = exp3_ctrfilt{ii}.Vmax;
@@ -442,8 +442,8 @@ close all
 general.legendnames = {'Freq', 'Time'}';
 
 exp4_ctrfilt = cell(length(general.legendnames),1);
-exp4_ctrfilt{1} = ctrfilt{general.idx.vast_nf};
-exp4_ctrfilt{2} = ctrfilt{general.idx.vast_t};
+exp4_ctrfilt{1} = control_filter{general.idx.vast_nf};
+exp4_ctrfilt{2} = control_filter{general.idx.vast_t};
 exp4_taroption.journal_exp_1 = false;
 for ii = 1:length(exp4_ctrfilt)
     exp4_ctrfilt{ii}.V = exp4_ctrfilt{ii}.Vmax;

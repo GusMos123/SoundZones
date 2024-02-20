@@ -1,4 +1,4 @@
-function [ctrfilt, general] = getCtrfilt(general, varout)
+function [ctrfilt, general] = get_control_filter(general, varout)
 
 % Set convex optimization properties
 cvxopt_properties.findopt = true;
