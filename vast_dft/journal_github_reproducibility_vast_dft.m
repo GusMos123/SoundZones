@@ -70,7 +70,7 @@ impulse_response_measured = simulator_room_impulse_response.irMeasured;
 impulse_response_virtual_score = simulator_room_impulse_response.irVirsrc;
 
 % Some variables
-varout = simulator_room_impulse_response.varout;
+output_variables = simulator_room_impulse_response.varout;
 
 clear simulator_room_impulse_response
 
@@ -79,7 +79,7 @@ clear simulator_room_impulse_response
 showSystemGeometry(loudspeaker_array,zones,room)
 
 % Initialize control filters
-control_filter = get_control_filter(general, varout);
+control_filter = get_control_filter(general, output_variables);
 targetdB = -10;
 for jj = general.idx.vast_nf:general.idx.vast_t
     control_filter{jj}.cvxopt_properties.findopt = false;
@@ -92,7 +92,7 @@ end
 
 % Initialization process for Sec. V-E
 cutlength = general.lenConFilter;
-[impulse_response_measured_cut, impulse_response_virtual_source_cut] = cutRIRs(general, varout, cutlength, ...
+[impulse_response_measured_cut, impulse_response_virtual_source_cut] = cutRIRs(general, output_variables, cutlength, ...
     impulse_response_measured, impulse_response_virtual_score);
 
 iscuttrue = false;
@@ -107,8 +107,8 @@ end
 
 % Initialization for VAST-NF
 % 1 kHz
-target_options.target_index = 16;
-target_options.target_frequency = (target_options.target_index-1)*varout.dF;
+target_options.target_index = 16; %target frequency finns i bin no 16
+target_options.target_frequency = (target_options.target_index-1)*output_variables.dF;
 target_options.journal_exp_1 = false;
 
 
@@ -161,33 +161,33 @@ calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, m
 % in the following figures.
 % ------------------------------------------------------------------ Note %
 
-exp2nre_ctrfilt = cell(2,1);
-exp2nre_ctrfilt{1} = control_filter{general.idx.vast_nf};
-exp2nre_ctrfilt{2} = control_filter{general.idx.vast_bf};
+experiment_no_2_control_filter = cell(2,1);
+experiment_no_2_control_filter{1} = control_filter{general.idx.vast_nf};
+experiment_no_2_control_filter{2} = control_filter{general.idx.vast_bf};
 exp2_taroption.journal_exp_1 = false;
 
 % Target dB of the constraint
 tdB = -37;
-for ii = 1:length(exp2nre_ctrfilt)
-    exp2nre_ctrfilt{ii}.V = exp2nre_ctrfilt{ii}.Vmax/4;
-    exp2nre_ctrfilt{ii}.incl_dcnyq = true;
-    exp2nre_ctrfilt{ii}.cvxopt_properties.findopt = true;
-    exp2nre_ctrfilt{ii}.cvxopt_properties.opttype = 'min_sb';
-    exp2nre_ctrfilt{ii}.cvxopt_properties.const = 'nsd';
-    exp2nre_ctrfilt{ii}.cvxopt_properties.tarval = 10^(tdB/10);
+for ii = 1:length(experiment_no_2_control_filter)
+    experiment_no_2_control_filter{ii}.V = experiment_no_2_control_filter{ii}.Vmax/4;
+    experiment_no_2_control_filter{ii}.include_dc_and_nyqvist_frequencies = true;
+    experiment_no_2_control_filter{ii}.cvxopt_properties.findopt = true;
+    experiment_no_2_control_filter{ii}.cvxopt_properties.opttype = 'min_sb';
+    experiment_no_2_control_filter{ii}.cvxopt_properties.const = 'nsd';
+    experiment_no_2_control_filter{ii}.cvxopt_properties.tarval = 10^(tdB/10);
 end
 
 % VAST-NF
-[exp2nre_ctrfilt{1}, exp2_pfm_vast_nf] = calculatefVAST(general, loudspeaker_array, zones, exp2nre_ctrfilt{1}, measured_room_impulse_responses, desired_room_impulse_responses, [], 'narrow', exp2_taroption);
+[experiment_no_2_control_filter{1}, exp2_pfm_vast_nf] = calculatefVAST(general, loudspeaker_array, zones, experiment_no_2_control_filter{1}, measured_room_impulse_responses, desired_room_impulse_responses, [], 'narrow', exp2_taroption);
 
 % VAST-BF
-[exp2nre_ctrfilt{2}, exp2_pfm_vast_bf] = calculatefVAST(general, loudspeaker_array, zones, exp2nre_ctrfilt{2}, measured_room_impulse_responses, desired_room_impulse_responses, [], 'broadindi', exp2_taroption);
+[experiment_no_2_control_filter{2}, exp2_pfm_vast_bf] = calculatefVAST(general, loudspeaker_array, zones, experiment_no_2_control_filter{2}, measured_room_impulse_responses, desired_room_impulse_responses, [], 'broadindi', exp2_taroption);
 
 close all
 general.legendnames = {'VAST-NF', 'VAST-BF'}';
 
 % Fig. 9 (d)
-labels_oac.titletext = ['oAC_muNF_' num2str(exp2nre_ctrfilt{1}.mu) '_BF_' num2str(exp2nre_ctrfilt{2}.mu) '_Vquarter_nSd' num2str(tdB) 'dB'];
+labels_oac.titletext = ['oAC_muNF_' num2str(experiment_no_2_control_filter{1}.mu) '_BF_' num2str(experiment_no_2_control_filter{2}.mu) '_Vquarter_nSd' num2str(tdB) 'dB'];
 str1 = [str_ref(:)', {[str_ref1 '9 (d).']}];
 labels_oac.tightfig = true;
 oac_all = cell(general.nmethods,1);
@@ -197,7 +197,7 @@ pmtplot_all(general, oac_all, [], labels_oac)
 text(110,27,str1,'BackgroundColor',bgc)
 
 % Fig. 9 (e)
-labels_nsde.titletext = ['nSDE_muNF_' num2str(exp2nre_ctrfilt{1}.mu) '_BF_' num2str(exp2nre_ctrfilt{2}.mu) '_Vquarter_nSd' num2str(tdB) 'dB'];
+labels_nsde.titletext = ['nSDE_muNF_' num2str(experiment_no_2_control_filter{1}.mu) '_BF_' num2str(experiment_no_2_control_filter{2}.mu) '_Vquarter_nSd' num2str(tdB) 'dB'];
 str1 = [str_ref(:)', {[str_ref1 '9 (e).']}];
 labels_nsde.tightfig = true;
 nsde_all = cell(general.nmethods,1);
@@ -208,7 +208,7 @@ text(110,4,str1,'BackgroundColor',bgc)
 
 
 % Fig. 9 (f)
-labels_nre.titletext = ['nRE_muNF_' num2str(exp2nre_ctrfilt{1}.mu) '_BF_' num2str(exp2nre_ctrfilt{2}.mu) '_Vquarter_nSd' num2str(tdB) 'dB'];
+labels_nre.titletext = ['nRE_muNF_' num2str(experiment_no_2_control_filter{1}.mu) '_BF_' num2str(experiment_no_2_control_filter{2}.mu) '_Vquarter_nSd' num2str(tdB) 'dB'];
 str1 = [str_ref(:)', {[str_ref1 '9 (f).']}];
 labels_nre.tightfig = true;
 nre_all = cell(general.nmethods,1);
@@ -241,7 +241,7 @@ for ii = 1:length(exp2p_nre_ctrfilt)
     exp2p_nre_ctrfilt{ii}.mu = 1;
 end
 
-can_V = (1:varout.nloudspks)*varout.Kbins;
+can_V = (1:output_variables.nloudspks)*output_variables.Kbins;
 exp2p_pfm_vast_nf = cell(length(can_V),1);
 exp2p_pfm_vast_bf = cell(length(can_V),1);
 
@@ -284,7 +284,7 @@ costfunction_vs_subspacerank_muopt = zeros(length(can_V),2);
 
 
 % muopt = (# of freq bins x # of zones) in {# of V x (VAST-NF, VAST-BF)}
-muopt = cellfun(@(x) zeros(varout.Kbins, varout.nzones), ...
+muopt = cellfun(@(x) zeros(output_variables.Kbins, output_variables.nzones), ...
     cell(length(can_V),2), 'UniformOutput', false);
 
 for kidx = 1:length(can_V)
@@ -299,7 +299,7 @@ for kidx = 1:length(can_V)
         measured_room_impulse_responses, desired_room_impulse_responses, [], 'broadindi', exp2p_taroption);
     
     muopt{kidx,1} = exp2p2_nre_ctrfilt{1}.cvxopt_properties.optpara;
-    muopt{kidx,2} = repmat(exp2p2_nre_ctrfilt{2}.cvxopt_properties.optpara,varout.Kbins,1);
+    muopt{kidx,2} = repmat(exp2p2_nre_ctrfilt{2}.cvxopt_properties.optpara,output_variables.Kbins,1);
     
     costfunction_vs_subspacerank_muopt(kidx,1) = ...
         sum(exp2p2_pfm_vast_nf{kidx}.sde{1} + muopt{kidx,1}(:,1).*exp2p2_pfm_vast_nf{kidx}.re{1});
@@ -464,14 +464,14 @@ exp4_ctrfilt{2}.conFilter = pmdirec_inf;
 % generate indata
 general.lenInput = 16000;
 general.timeStamps = (0:general.lenInput-1)'*general.dt;
-varout.numV = 1;
-varout.nummu = 1;
+output_variables.numV = 1;
+output_variables.nummu = 1;
 
 general.nmethods = 2;
-varout.nmethods = general.nmethods;
-varout.nzones = 1;
+output_variables.nmethods = general.nmethods;
+output_variables.nzones = 1;
 
-ffidx = (1:(varout.Kbins-1)*4)*varout.dF/4;
+ffidx = (1:(output_variables.Kbins-1)*4)*output_variables.dF/4;
 
 binlength = length(ffidx);
 oac = zeros(binlength,general.nmethods);
@@ -484,7 +484,7 @@ for ii = 1:binlength
     indata{2} = indata{1};
     
     pfm_mtx = getPerformanceMetrics_v2...
-        (general, loudspeaker_array, zones, varout, exp4_ctrfilt, indata, measured_room_impulse_responses);
+        (general, loudspeaker_array, zones, output_variables, exp4_ctrfilt, indata, measured_room_impulse_responses);
     
     for jj = 1:general.nmethods
         oac(ii,jj) = pfm_mtx.ctr.ac_mtx{jj,1}.scores;
@@ -499,7 +499,7 @@ figure('Name','oAC_different_methods')
 subplot(211)
 plot(ffidx,oac)
 hold on
-plot(varout.freq(2:end), oac(4:4:end,1))
+plot(output_variables.freq(2:end), oac(4:4:end,1))
 hold off
 legend({'freq dft', 'time', 'freq only DFT grid'});
 legendhitcallback
@@ -510,7 +510,7 @@ ylabel('oAC [dB]'),xlabel('Frequency [Hz]')
 subplot(212)
 plot(ffidx,oac)
 hold on
-plot(varout.freq(2:end), oac(4:4:end,1))
+plot(output_variables.freq(2:end), oac(4:4:end,1))
 hold off
 legend({'freq dft', 'time', 'freq only DFT grid'});
 legendhitcallback
