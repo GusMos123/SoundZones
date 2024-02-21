@@ -67,9 +67,20 @@ target_options.journal_exp_1 = false;
 
 experiment_1_control_filter = control_filter{general.idx.vast_nf};
 experiment_1_target_options = target_options;
-experiment_1_target_options.journal_exp_1 = true;
+experiment_1_target_options.journal_exp_1 = false;
 experiment_1_control_filter.include_dc_and_nyqvist_frequencies = true;
 
+desired_room_impulse_responses = impulse_response_virtual_score;
 
+[ctrfilter, perform, rankcheck,q]=calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, impulse_response_measured, desired_room_impulse_responses, [], 'narrow', experiment_1_target_options);
 
-[ctrfilter, perform, rankcheck]=calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, impulse_response_measured, desired_room_impulse_responses, [], 'narrow', experiment_1_target_options);
+%%
+
+loudspeaker_filter_zone_1=q{1,1}(1,:);
+loudspeaker_filter_zone_2=q{2,1}(1,:);
+
+desired_microphone_1_from_zone_1=desired_room_impulse_responses{1,1}(:,1);
+desired_microphone_1_from_zone_2=desired_room_impulse_responses{2,1}(:,1);
+
+figure
+plot([desired_microphone_1_from_zone_1, desired_microphone_1_from_zone_2])

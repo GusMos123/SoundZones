@@ -1,4 +1,4 @@
-function [ctrfilter, perform, rankcheck] = calculatefVAST(general, array, zone, ctrfilter, rirs, drirs, dummy, bandoption, taroption)
+function [ctrfilter, perform, rankcheck,q] = calculatefVAST(general, array, zone, ctrfilter, rirs, drirs, dummy, bandoption, taroption)
 
 if nargin < 8
     bandoption = 'narrow'; % 'narrow', 'broadindi'
@@ -20,7 +20,7 @@ end
 
 nzones = zone.number;
 nloudspks = array.numLoudspk;
-nctrpts = zone.numCtrPtsBr;
+number_of_control_points = zone.numCtrPtsBr;
 
 if ctrfilter.include_dc_and_nyqvist_frequencies
     general.include_dc_and_nyqvist_frequencies = true;
@@ -102,27 +102,27 @@ if taroption.journal_exp_1
     return
 else
 
-    Hbq_Kbins = zeros(nctrpts,Kbins);
-    d_Kbins = zeros(nctrpts,Kbins);
+    Hbq_Kbins = zeros(number_of_control_points,Kbins);
+    d_Kbins = zeros(number_of_control_points,Kbins);
 
     for fbinidx = 1:Kbins
         H = cell(nzones,1);
         ssidx = flipud(perms(1:nzones));
-        for sridx = 1:nzones
-            H{sridx} = squeeze(Hml{sridx}(fbinidx,:,:));
+        for sound_region_index = 1:nzones
+            H{sound_region_index} = squeeze(Hml{sound_region_index}(fbinidx,:,:));
         end
-        for sridx = 1:nzones
-            Hb = H{ssidx(sridx,1)};
-            Hd = H{ssidx(sridx,2)};
+        for sound_region_index = 1:nzones
+            Hb = H{ssidx(sound_region_index,1)};
+            Hd = H{ssidx(sound_region_index,2)};
 
-            d = Dm{sridx}(fbinidx,:).';
+            d = Dm{sound_region_index}(fbinidx,:).';
             hz = d;
 
             Rb = Hb'*Hb;
             Rd = Hd'*Hd;
             rb = Hb'*hz;
 
-            qf = q{sridx}(:,fbinidx);
+            qf = q{sound_region_index}(:,fbinidx);
             pfm = pfm_mtx_mse;
 
             Hbq_Kbins(:,fbinidx) = Hb*qf;
@@ -140,17 +140,17 @@ else
             pfm.getre(Rd,qf);
 
 
-            priorAC{sridx}(fbinidx) = pfm.priorAC;
-            postAC{sridx}(fbinidx) = pfm.postAC;
+            priorAC{sound_region_index}(fbinidx) = pfm.priorAC;
+            postAC{sound_region_index}(fbinidx) = pfm.postAC;
 
-            nsde{sridx}(fbinidx) = pfm.nsde;
-            sde{sridx}(fbinidx) = pfm.sde;
+            nsde{sound_region_index}(fbinidx) = pfm.nsde;
+            sde{sound_region_index}(fbinidx) = pfm.sde;
 
-            nre{sridx}(fbinidx) = pfm.nre;
-            re{sridx}(fbinidx) = pfm.resiEner;
+            nre{sound_region_index}(fbinidx) = pfm.nre;
+            re{sound_region_index}(fbinidx) = pfm.resiEner;
 
-            iRbi{sridx}(fbinidx) = pfm.iRbi;
-            iRdi{sridx}(fbinidx) = pfm.iRdi;
+            iRbi{sound_region_index}(fbinidx) = pfm.iRbi;
+            iRdi{sound_region_index}(fbinidx) = pfm.iRdi;
         end
     end
 
@@ -167,15 +167,15 @@ else
 
     perform = orderfields(perform);
 
-    for sridx = 1:nzones
+    for sound_region_index = 1:nzones
         fidx = 1:general.lenConFilter;
         for lidx = 1:nloudspks
             if ctrfilter.incl_dcnyq
-               Q = [q{sridx}(lidx,:),flip(conj(q{sridx}(lidx,2:end-1)))].';
+               Q = [q{sound_region_index}(lidx,:),flip(conj(q{sound_region_index}(lidx,2:end-1)))].';
             else
-                Q = [0,q{sridx}(lidx,:),0,flip(conj(q{sridx}(lidx,:)))].';
+                Q = [0,q{sound_region_index}(lidx,:),0,flip(conj(q{sound_region_index}(lidx,:)))].';
             end
-            q_fvast{sridx}(fidx) = real(ifft(Q));
+            q_fvast{sound_region_index}(fidx) = real(ifft(Q));
             fidx = fidx + general.lenConFilter;
         end
     end
@@ -183,7 +183,7 @@ else
     ctrfilter.conFilter = q_fvast;
 
     misfig = true;
-    mcenter = round(median(1:nctrpts));
+    mcenter = round(median(1:number_of_control_points));
     if misfig%figoption
         maxcont = max([10*log10(postAC{1});10*log10(postAC{2})]);
         mincont = min([10*log10(postAC{1});10*log10(postAC{2})]);

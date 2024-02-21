@@ -9,11 +9,11 @@ catch
 end
 
 nzones = size(Hml,1);
-[Kbins, nctrpts, nloudspks] = size(Hml{nzones});
+[Kbins, number_of_microphones, number_of_loudspeakers] = size(Hml{nzones});
 
-allones = ones(nloudspks,1);
+allones = ones(number_of_loudspeakers,1);
 
-q = cellfun(@(x) zeros(nloudspks, Kbins), ...
+q = cellfun(@(x) zeros(number_of_loudspeakers, Kbins), ...
     cell(nzones,1), 'UniformOutput', false);
 
 if strcmpi(ctrfilter.cvxopt_properties.opttype, 'min_sb')
@@ -25,7 +25,7 @@ end
 % Since this is the narrowband approach
 taroption.broadband = false;
 taroption.tightfigure = true;
-taroption.nloudspks = nloudspks;
+taroption.nloudspks = number_of_loudspeakers;
 if strcmpi(ctrfilter.cvxopt_properties.opttype, 'min_sd')
     if strcmpi(ctrfilter.cvxopt_properties.const, 'sb')
         taroption.nsb = false;
@@ -46,15 +46,15 @@ if journal_exp_1
     ff = taridx;
     H = cell(nzones,1);
     ssidx = flipud(perms(1:nzones));
-    for sridx = 1:nzones
-        H{sridx} = squeeze(Hml{sridx}(ff,:,:));
+    for sound_region_index = 1:nzones
+        H{sound_region_index} = squeeze(Hml{sound_region_index}(ff,:,:));
     end
     
-    for sridx = 1:nzones
-        Hb = H{ssidx(sridx,1)};
-        Hd = H{ssidx(sridx,2)};
+    for sound_region_index = 1:nzones
+        Hb = H{ssidx(sound_region_index,1)};
+        Hd = H{ssidx(sound_region_index,2)};
         
-        d = Dm{sridx}(ff,:).';
+        d = Dm{sound_region_index}(ff,:).';
         
         Rb = Hb'*Hb;
         Rd = Hd'*Hd;
@@ -71,7 +71,7 @@ if journal_exp_1
         calinfo.wrb = rb;
         calinfo.U = U;
         calinfo.D = D;
-        calinfo.sridx = sridx;
+        calinfo.sridx = sound_region_index;
         calinfo.tarfreq = taroption.tarfreq;
         
         pfmmtx = get_mse_pfm(calinfo);
@@ -83,15 +83,15 @@ else
     for ff = 1:Kbins
         H = cell(nzones,1);
         ssidx = flipud(perms(1:nzones));
-        for sridx = 1:nzones
-            H{sridx} = squeeze(Hml{sridx}(ff,:,:));
+        for sound_region_index = 1:nzones
+            H{sound_region_index} = squeeze(Hml{sound_region_index}(ff,:,:));
         end
 
-        for sridx = 1:nzones
-            Hb = H{ssidx(sridx,1)};
-            Hd = H{ssidx(sridx,2)};
+        for sound_region_index = 1:nzones
+            Hb = H{ssidx(sound_region_index,1)};
+            Hd = H{ssidx(sound_region_index,2)};
 
-            d = Dm{sridx}(ff,:).';
+            d = Dm{sound_region_index}(ff,:).';
 
             Rb = Hb'*Hb;
             Rd = Hd'*Hd;
@@ -109,13 +109,13 @@ else
             % Calculate the optimal coefficient a
             if ctrfilter.cvxopt_properties.findopt
                 if strcmpi(ctrfilter.cvxopt_properties.opttype, 'min_sd')
-                    ctrfilter = getOptPara(uvrb,d_part,d,ctrfilter,[ff, sridx]);
+                    ctrfilter = getOptPara(uvrb,d_part,d,ctrfilter,[ff, sound_region_index]);
                 else
                     iRdi = abs(allones'*Rd*allones);
-                    ctrfilter = getOptPara(uvrb,d_part,iRdi,ctrfilter,[ff, sridx]);
+                    ctrfilter = getOptPara(uvrb,d_part,iRdi,ctrfilter,[ff, sound_region_index]);
                 end
 
-                mu_new = ctrfilter.cvxopt_properties.optpara(ff, sridx);
+                mu_new = ctrfilter.cvxopt_properties.optpara(ff, sound_region_index);
             else
                 mu_new = ctrfilter.mu;
             end
@@ -123,7 +123,7 @@ else
             ctrfilter.mu = mu_new;
 
             qf = U_part*(uvrb./(mu_new + d_part));
-            q{sridx}(:,ff) = qf;
+            q{sound_region_index}(:,ff) = qf;
 
 %             % Plot the cost functions
 %             if sridx == 1 && ff == taridx

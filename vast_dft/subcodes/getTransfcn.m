@@ -28,9 +28,9 @@ end
 % else
 %     lenir = general.lenRir;
 % end
-lenir = size(drirs{1},1);
+length_of_impulse_response = size(drirs{1},1);
 
-multiplierfactor = ceil(lenir/general.lenConFilter/10)*10;
+multiplierfactor = ceil(length_of_impulse_response/general.lenConFilter/10)*10;
 nfft = multiplierfactor*general.lenConFilter;
 
 dF = general.fs/general.lenConFilter;
@@ -53,7 +53,7 @@ dm = cellfun(@(x) zeros(nfft,zone.numCtrPts), ...
 for ss = 1:zone.number
     for midx = 1:zone.numCtrPts
         for lidx = 1:array.numLoudspk
-            inlidx = (1:lenir) + (lidx-1)*lenir;
+            inlidx = (1:length_of_impulse_response) + (lidx-1)*length_of_impulse_response;
             hml{ss}(:,midx,lidx) = fft(rirs{ss}(inlidx,midx),nfft);
         end
         dm{ss}(:,midx) = fft(drirs{ss}(:,midx),nfft);
