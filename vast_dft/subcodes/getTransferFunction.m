@@ -6,9 +6,11 @@ function [Hml, Dm, hml, dm] = getTransferFunction(general,array,zone,rirs,drirs,
 % The last two output variables are for the all transfer functions with a
 % proper amount of frequency bins
 %
-% Hml : Selected transfer function between loudspk l to ctr pts m
+% Hml : Selected transfer function between loudspk l to ctr pts m to fit in
+% the bins
 % Dm  : Selected transfer function between virtual src z to ctr pts m
-% hml : Transfer function between loudspk l to ctr pts m
+% hml : Transfer function between loudspkeaker l to control point m with
+% full frequency resolution
 % dm  : Transfer function between virtual src z to ctr pts m
 %
 
@@ -51,12 +53,12 @@ dm = cellfun(@(x) zeros(nfft,zone.numCtrPts), ...
 % rirs   >> hml
 % drirs  >> hz
 for ss = 1:zone.number
-    for midx = 1:zone.numCtrPts
-        for lidx = 1:array.numLoudspk
-            inlidx = (1:length_of_impulse_response) + (lidx-1)*length_of_impulse_response;
-            hml{ss}(:,midx,lidx) = fft(rirs{ss}(inlidx,midx),nfft);
+    for microphone_idx = 1:zone.numCtrPts
+        for loudspeaker_idx = 1:array.numLoudspk
+            inlidx = (1:length_of_impulse_response) + (loudspeaker_idx-1)*length_of_impulse_response;
+            hml{ss}(:,microphone_idx,loudspeaker_idx) = fft(rirs{ss}(inlidx,microphone_idx),nfft);
         end
-        dm{ss}(:,midx) = fft(drirs{ss}(:,midx),nfft);
+        dm{ss}(:,microphone_idx) = fft(drirs{ss}(:,microphone_idx),nfft);
     end
 end
 

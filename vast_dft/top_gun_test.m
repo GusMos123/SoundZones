@@ -22,3 +22,11 @@ for bin = 1:no_bins-1
 end
 
 sound(real(soundout),fs) %lyssna på topgun
+
+%%
+indexes=20000:200100;
+norm(x(indexes,1)-soundout(indexes))
+
+
+
+plot(indexes,[x(indexes,1) soundout(indexes)])

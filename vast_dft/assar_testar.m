@@ -173,6 +173,7 @@ for i = 1:16
 end
 
 %%
+figure
 hold on
-plot(0:66.66:8000,abs(filter_sound_1(6,:)))
-plot(0:66.66:8000,abs(filter_sound_2(1,:)))
+plot(0:66.66:8000,abs(filter_sound_1(10,:)),'green')
+plot(0:66.66:8000,abs(filter_sound_2(1,:)),'black')
