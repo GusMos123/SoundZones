@@ -1,4 +1,4 @@
-%% Initialization
+%% Kopia av kod, mest kladd
 close all;clear;clc
 
 % hej hej
@@ -46,6 +46,8 @@ frequencies=output_variables.dF;
 %ok så det verkar som att varje kolumn i Impulse-response motsvarar en
 %mikrofons impulssvar från samtliga 16 högtalare.'
 
+
+%följande bit är otroligt oklart
 control_filter = get_control_filter(general, output_variables);
 targetdB = -10;
 for jj = general.idx.vast_nf:general.idx.vast_t
@@ -69,18 +71,108 @@ experiment_1_control_filter = control_filter{general.idx.vast_nf};
 experiment_1_target_options = target_options;
 experiment_1_target_options.journal_exp_1 = false;
 experiment_1_control_filter.include_dc_and_nyqvist_frequencies = true;
+experiment_1_target_options.taridx=16;
 
 desired_room_impulse_responses = impulse_response_virtual_score;
 
-[ctrfilter, perform, rankcheck,q]=calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, impulse_response_measured, desired_room_impulse_responses, [], 'narrow', experiment_1_target_options);
+%[ctrfilter, perform, rankcheck,q]=calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, impulse_response_measured, desired_room_impulse_responses, [], 'narrow', experiment_1_target_options);
+
+%% Här börjar nåt viktigt
+
+%generera 1 kHz
+
+fs=general.fs;
+
+% Duration of the signal (seconds)
+duration = 1;  % Example duration, you can change it as needed
+
+% Time vector
+t = 0:1/fs:duration-1/fs;
+
+% Frequency of the tone (Hz)
+f_tone = 1000;  % 1 kHz tone
+
+% Generate the sinusoidal signal
+x = sin(2*pi*f_tone*t);
+
+nfft=4096;
+
+% Take the Fourier transform
+tone_freq_domain = fft(x,nfft)';
+
+% Frequency axis
+frequencyAxis = linspace(-fs/2, fs/2, nfft);
+
+
+ % Plot the magnitude spectrum
+figure;
+plot(frequencyAxis, abs(tone_freq_domain));
+xlabel('Frequency (Hz)');
+ylabel('Magnitude');
+title('Magnitude Spectrum of 1 kHz Tone, not shifted');
+grid on;
+
+%Steg 1: separera impulssvaren
+all_impulse_responses_time_domain_zone_1=impulse_response_measured{1,1};
+all_impulse_responses_time_domain_zone_2=impulse_response_measured{2,1};
+
+impulse_responses_time_domain_zone_1=zeros(16,37,2967);
+impulse_responses_time_domain_zone_2=zeros(16,37,2967);
+
+impulse_responses_freq_domain_zone_1=zeros(16,37,nfft);
+impulse_responses_freq_domain_zone_2=zeros(16,37,nfft);
+
+
+%svårt att fouriera till frequency domain, eftersom vi vet inte riktigt
+%vilken frekvensaxel vi får i frekvensdomänen.
+control_filter=control_filter{1,1};
+[Hml, Dm, hml, dm] = getTransferFunction(general,loudspeaker_array,zones,impulse_response_measured,desired_room_impulse_responses,false);
+[q control_filter]=getfVASTnarrow(control_filter,Hml,Dm,experiment_1_target_options);
+
+%% Hämta ut impulssvar och konvertera till användbara h:n
+for speaker=1:16
+    for microphone=1:37
+         impulse_responses_time_domain_zone_1(speaker,microphone,:)=all_impulse_responses_time_domain_zone_1((speaker-1)*2967 +1:speaker*2967,microphone);
+         impulse_responses_time_domain_zone_2(speaker,microphone,:)=all_impulse_responses_time_domain_zone_2((speaker-1)*2967 +1:speaker*2967,microphone);
+
+         impulse_responses_freq_domain_zone_1(speaker,microphone,:)=fft(impulse_responses_time_domain_zone_1(speaker,microphone,:),nfft);
+         impulse_responses_freq_domain_zone_2(speaker,microphone,:)=fft(impulse_responses_time_domain_zone_2(speaker,microphone,:),nfft);
+    end
+end
+
+clear all_impulse_responses_time_domain_zone_2;
+clear all_impulse_responses_time_domain_zone_1;
+
+filter_sound_1=q{1,1};
+filter_sound_2=q{2,1};
+
+
+%% summering för att få sound out (pm) i en mikrofon
+
+%testa fucka upp signalen först
+%och det borde typ funka ändå??
+bright_mic=5;
+dark_mic=7;
+
+output_bright_zone=multiply_with_bins(tone_freq_domain,squeeze(impulse_responses_freq_domain_zone_1(:,bright_mic,:)),filter_sound_1,nfft);
+output_dark_zone=multiply_with_bins(tone_freq_domain,squeeze(impulse_responses_freq_domain_zone_2(:,dark_mic,:)),filter_sound_1,nfft);
+
 
 %%
+sound_out=ifft(output_bright_zone, nfft);
+sound_out_dark=ifft(output_dark_zone, nfft);
 
-loudspeaker_filter_zone_1=q{1,1}(1,:);
-loudspeaker_filter_zone_2=q{2,1}(1,:);
+sound(repmat(real(sound_out),[1 4]),fs);
+%%
+sound(repmat(real(sound_out_dark),[1 4]),fs);
 
-desired_microphone_1_from_zone_1=desired_room_impulse_responses{1,1}(:,1);
-desired_microphone_1_from_zone_2=desired_room_impulse_responses{2,1}(:,1);
+%% Plotta impulssvaren och jämföra
+hold on
+for i = 1:16
+    plot(squeeze(impulse_responses_time_domain_zone_1(i,37,:))) % ser bra ut (lika ut för alla högtalare på varje mikronfon)
+end
 
-figure
-plot([desired_microphone_1_from_zone_1, desired_microphone_1_from_zone_2])
+%%
+hold on
+plot(abs(filter_sound_1(1,:)))
+plot(abs(filter_sound_2(1,:)))
