@@ -73,7 +73,7 @@ experiment_1_target_options.journal_exp_1 = false;
 experiment_1_control_filter.include_dc_and_nyqvist_frequencies = true;
 experiment_1_target_options.taridx=16;
 
-desired_room_impulse_responses = impulse_response_virtual_score;
+desired_room_impulse_responses = impulse_response_virtual_score; %otroligt oklart
 
 %[ctrfilter, perform, rankcheck,q]=calculatefVAST(general, loudspeaker_array, zones, experiment_1_control_filter, impulse_response_measured, desired_room_impulse_responses, [], 'narrow', experiment_1_target_options);
 
@@ -174,5 +174,5 @@ end
 
 %%
 hold on
-plot(abs(filter_sound_1(1,:)))
-plot(abs(filter_sound_2(1,:)))
+plot(0:66.66:8000,abs(filter_sound_1(6,:)))
+plot(0:66.66:8000,abs(filter_sound_2(1,:)))
