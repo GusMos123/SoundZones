@@ -67,7 +67,7 @@ for sridx = 1:2%1:nzones
     hz = vertcat(hhz{:});
     
     % Joint diagonalization
-    [U, D] = jdiag(Rb, Rd, 'vector', true);
+    [U, D] = joint_diagonalization(Rb, Rd, 'vector', true);
     D = real(D);
     V = ctrfilter.V;
     

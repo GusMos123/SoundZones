@@ -193,7 +193,7 @@ labels_oac.tightfig = true;
 oac_all = cell(general.nmethods,1);
 oac_all{1} = exp2_pfm_vast_nf.postAC;
 oac_all{2} = exp2_pfm_vast_bf.postAC;
-pmtplot_all(general, oac_all, [], labels_oac)
+performance_metric_tracker_plot_all(general, oac_all, [], labels_oac)
 text(110,27,str1,'BackgroundColor',bgc)
 
 % Fig. 9 (e)
@@ -203,7 +203,7 @@ labels_nsde.tightfig = true;
 nsde_all = cell(general.nmethods,1);
 nsde_all{1} = exp2_pfm_vast_nf.nsde;
 nsde_all{2} = exp2_pfm_vast_bf.nsde;
-pmtplot_all(general, nsde_all, [], labels_nsde)
+performance_metric_tracker_plot_all(general, nsde_all, [], labels_nsde)
 text(110,4,str1,'BackgroundColor',bgc)
 
 
@@ -214,7 +214,7 @@ labels_nre.tightfig = true;
 nre_all = cell(general.nmethods,1);
 nre_all{1} = exp2_pfm_vast_nf.nre;
 nre_all{2} = exp2_pfm_vast_bf.nre;
-pmtplot_all(general, nre_all, [], labels_nre)
+performance_metric_tracker_plot_all(general, nre_all, [], labels_nre)
 text(110,-24,str1,'BackgroundColor',bgc)
 
 
@@ -236,7 +236,7 @@ exp2p_nre_ctrfilt{1} = control_filter{general.idx.vast_nf};
 exp2p_nre_ctrfilt{2} = control_filter{general.idx.vast_bf};
 exp2p_taroption.journal_exp_1 = false;
 for ii = 1:length(exp2p_nre_ctrfilt)
-    exp2p_nre_ctrfilt{ii}.incl_dcnyq = true;
+    exp2p_nre_ctrfilt{ii}.include_dc_and_nyqvist_frequencies = true;
     exp2p_nre_ctrfilt{ii}.cvxopt_properties.findopt = false;
     exp2p_nre_ctrfilt{ii}.mu = 1;
 end
@@ -270,7 +270,7 @@ exp2p2_nre_ctrfilt{1} = control_filter{general.idx.vast_nf};
 exp2p2_nre_ctrfilt{2} = control_filter{general.idx.vast_bf};
 tdB = -37;
 for ii = 1:length(exp2p2_nre_ctrfilt)
-    exp2p2_nre_ctrfilt{ii}.incl_dcnyq = true;
+    exp2p2_nre_ctrfilt{ii}.include_dc_and_nyqvist_frequencies = true;
     exp2p2_nre_ctrfilt{ii}.cvxopt_properties.findopt = true;
     exp2p2_nre_ctrfilt{ii}.cvxopt_properties.opttype = 'min_sb';
     exp2p2_nre_ctrfilt{ii}.cvxopt_properties.const = 'nsd';
@@ -356,7 +356,7 @@ exp3_ctrfilt{3} = control_filter{general.idx.vast_t};
 exp3_taroption.journal_exp_1 = false;
 for ii = 1:length(exp3_ctrfilt)
     exp3_ctrfilt{ii}.V = exp3_ctrfilt{ii}.Vmax;
-    exp3_ctrfilt{ii}.incl_dcnyq = true;
+    exp3_ctrfilt{ii}.include_dc_and_nyqvist_frequencies = true;
 end
 
 % VAST-NF
@@ -448,7 +448,7 @@ exp4_taroption.journal_exp_1 = false;
 for ii = 1:length(exp4_ctrfilt)
     exp4_ctrfilt{ii}.V = exp4_ctrfilt{ii}.Vmax;
     exp4_ctrfilt{ii}.mu = 1;
-    exp4_ctrfilt{ii}.incl_dcnyq = true;
+    exp4_ctrfilt{ii}.include_dc_and_nyqvist_frequencies = true;
 end
 [exp4_ctrfilt{1}, exp4_pfm_vast_nf] = calculatefVAST(general, loudspeaker_array, zones, exp4_ctrfilt{1}, impulse_response_measured, impulse_response_virtual_score, [], 'narrow', exp4_taroption);
 

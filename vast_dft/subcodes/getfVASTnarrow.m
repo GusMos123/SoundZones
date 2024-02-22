@@ -61,7 +61,7 @@ if journal_exp_1
         rb = Hb'*d;
         
         % Joint diagonalization
-        [U, D] = jdiag(Rb, Rd, 'vector', true);
+        [U, D] = joint_diagonalization(Rb, Rd, 'vector', true);
         
         calinfo.mucan = logspace(-15,15,101);
         calinfo.Vcan = 1:16;
@@ -98,7 +98,7 @@ else
             rb = Hb'*d;
 
             % Joint diagonalization
-            [U, D] = jdiag(Rb, Rd, 'vector');
+            [U, D] = joint_diagonalization(Rb, Rd, 'vector');
 
             V = ctrfilter.V;
 

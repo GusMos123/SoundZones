@@ -1,4 +1,4 @@
-function pmtplot_all(general, metric_all, dummy, labels)
+function performance_metric_tracker_plot_all(general, metric_all, dummy, labels)
 if nargin < 4
     labels.titletext = '';
     labels.figname1 = 'fVASTnarrow';

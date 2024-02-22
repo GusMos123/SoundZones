@@ -28,7 +28,7 @@ else
     general.include_dc_and_nyqvist_frequencies = false;
 end
 
-[Hml, Dm, hml, dm] = getTransfcn(general,array,zone,room_impulse_response,direct_room_impulse_response);
+[Hml, Dm, hml, dm] = getTransferFunction(general,array,zone,room_impulse_response,direct_room_impulse_response);
 
 dF = general.fs/general.lenConFilter;
 freq = (0:dF:general.fs/2)';

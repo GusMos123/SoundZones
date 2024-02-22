@@ -1,4 +1,4 @@
-function pfm_mtx = initPfmMtx(general, varout, metricname)
+function pfm_mtx = init_performance_metrix(general, varout, metricname)
 if nargin < 3
     metricname = '';
 end

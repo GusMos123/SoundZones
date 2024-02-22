@@ -1,4 +1,4 @@
-function [U,D] = jdiag(A, B, evaOption, eigOption)
+function [U,D] = joint_diagonalization(A, B, evaOption, eigOption)
 % JDIAG    Joint diagonalization function
 %  [U,D] = JDIAG(A, B, evaOption)
 % JDIAG returns the eigenvectors and the eigenvalues from Au = dBu
