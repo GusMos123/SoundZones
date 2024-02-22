@@ -1,4 +1,4 @@
-function [ctrfilter, perform, rankcheck,q] = calculatefVAST(general, array, zone, ctrfilter, rirs, drirs, dummy, bandoption, taroption)
+function [control_fitler, perform, rankcheck,q] = calculatefVAST(general, array, zone, control_fitler, room_impulse_response, direct_room_impulse_response, dummy, bandoption, taroption)
 
 if nargin < 8
     bandoption = 'narrow'; % 'narrow', 'broadindi'
@@ -9,31 +9,31 @@ end
 % const      : if 'min_sb', then 'sd'
 %              if 'min_sd', then 'sb'
 % tarval     : the target value, by default, 1e-5
-if ~isfield(ctrfilter,'cvxopt_properties')
-    ctrfilter.cvxopt_properties.opttype = 'min_sb';
-    ctrfilter.cvxopt_properties.const = 'sd';
-    ctrfilter.cvxopt_properties.tarval = 1e-5;
-    ctrfilter.cvxopt_properties.findopt = true;
-    ctrfilter.cvxopt_properties.initpara = 0;
-    ctrfilter.cvxopt_properties.optpara = 0;
+if ~isfield(control_fitler,'cvxopt_properties')
+    control_fitler.cvxopt_properties.opttype = 'min_sb';
+    control_fitler.cvxopt_properties.const = 'sd';
+    control_fitler.cvxopt_properties.tarval = 1e-5;
+    control_fitler.cvxopt_properties.findopt = true;
+    control_fitler.cvxopt_properties.initpara = 0;
+    control_fitler.cvxopt_properties.optpara = 0;
 end
 
 nzones = zone.number;
 nloudspks = array.numLoudspk;
 number_of_control_points = zone.numCtrPtsBr;
 
-if ctrfilter.include_dc_and_nyqvist_frequencies
+if control_fitler.include_dc_and_nyqvist_frequencies
     general.include_dc_and_nyqvist_frequencies = true;
 else
     general.include_dc_and_nyqvist_frequencies = false;
 end
 
-[Hml, Dm, hml, dm] = getTransfcn(general,array,zone,rirs,drirs);
+[Hml, Dm, hml, dm] = getTransfcn(general,array,zone,room_impulse_response,direct_room_impulse_response);
 
 dF = general.fs/general.lenConFilter;
 freq = (0:dF:general.fs/2)';
 
-if ~ctrfilter.incl_dcnyq
+if ~control_fitler.incl_dcnyq
     freq = freq(2:end-1);  % excl. the DC and the Nyquist frequency
 end
 
@@ -76,19 +76,19 @@ switch bandoption
         taroption.taridx = taridx;
         taroption.tarfreq = tarfreq;
         % Independent Kbins frequency bins
-        [q, ctrfilter] = getfVASTnarrow(ctrfilter, Hml, Dm, taroption);
+        [q, control_fitler] = getfVASTnarrow(control_fitler, Hml, Dm, taroption);
 
     case 'broadindi'
-        [q, ctrfilter] = getfVASTbroadindi(ctrfilter, Hml, Dm, taroption);
+        [q, control_fitler] = getfVASTbroadindi(control_fitler, Hml, Dm, taroption);
 
     case 'time'
         nfft = general.lenConFilter;
         for zidx = 1:nzones
             for lidx = 1:nloudspks
                 inidx = (1:nfft) + (lidx-1)*nfft;
-                getfft = fft(ctrfilter.conFilter{zidx}(inidx), nfft);
+                getfft = fft(control_fitler.conFilter{zidx}(inidx), nfft);
                 
-                if ctrfilter.incl_dcnyq
+                if control_fitler.incl_dcnyq
                     q{zidx}(lidx,:) = getfft(1:nfft/2+1);
                 else
                     q{zidx}(lidx,:) = getfft(2:nfft/2);
@@ -170,7 +170,7 @@ else
     for sound_region_index = 1:nzones
         fidx = 1:general.lenConFilter;
         for lidx = 1:nloudspks
-            if ctrfilter.incl_dcnyq
+            if control_fitler.incl_dcnyq
                Q = [q{sound_region_index}(lidx,:),flip(conj(q{sound_region_index}(lidx,2:end-1)))].';
             else
                 Q = [0,q{sound_region_index}(lidx,:),0,flip(conj(q{sound_region_index}(lidx,:)))].';
@@ -180,7 +180,7 @@ else
         end
     end
 
-    ctrfilter.conFilter = q_fvast;
+    control_fitler.conFilter = q_fvast;
 
     misfig = true;
     mcenter = round(median(1:number_of_control_points));

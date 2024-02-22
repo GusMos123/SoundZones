@@ -1,4 +1,4 @@
-function [Hml, Dm, hml, dm] = getTransfcn(general,array,zone,rirs,drirs,figoption)
+function [Hml, Dm, hml, dm] = getTransferFunction(general,array,zone,rirs,drirs,figoption)
 % [hml, dm, Hml, Dm] = GETTRANSFCN(general,array,zone,rirs,drirs)
 % A function GETTRANSFCN returns the transfer functions from room impulse
 % response functions in the time domain
