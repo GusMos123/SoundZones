@@ -24,7 +24,7 @@ end
 sound(real(soundout),fs) %lyssna på topgun
 
 %%
-indexes=20000:200100;
+indexes=30000:300100;
 norm(x(indexes,1)-soundout(indexes))
 
 

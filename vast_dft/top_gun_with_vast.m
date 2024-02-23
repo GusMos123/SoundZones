@@ -174,10 +174,10 @@ end
 toc
 
 %%
-sound(real(soundout_bright),44100*(4096/882));
+sound(real(soundout_bright),44100*(nfft/bin_duration));
 
 %%
-sound(real(soundout_dark),44100*(4096/882));
+sound(real(soundout_dark),44100*(nfft/bin_duration));
 
 
 
