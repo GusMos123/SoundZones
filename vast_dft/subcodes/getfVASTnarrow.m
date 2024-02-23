@@ -123,6 +123,7 @@ else
             ctrfilter.mu = mu_new;
 
             qf = U_part*(uvrb./(mu_new + d_part));
+            %q=U*a
             q{sound_region_index}(:,ff) = qf;
 
 %             % Plot the cost functions

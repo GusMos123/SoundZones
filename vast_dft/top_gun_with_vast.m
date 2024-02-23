@@ -11,7 +11,6 @@ datafilename = 'srir_fs16kHz_vast_dft__rir_generator.mat';
 
 simulator_room_impulse_response = load(fullfile(pwd,'rirdata',datafilename));
 
-
 % Processing details
 general = simulator_room_impulse_response.general;
 
@@ -77,46 +76,24 @@ desired_room_impulse_responses = impulse_response_virtual_score; %otroligt oklar
 
 control_filter=control_filter{1,1}; %Finns ju 7 st??
 
+[x,fs]=audioread("dangerzone.mp3");
+
+x=x(:,1);
+nfft=4096;
+
+bin_duration=fs/50; %antal sample points som mostvarar 20 ms (ish stationär process)
+no_bins=ceil(length(x)/bin_duration); %antal binns vi behöver
+X=zeros(nfft,no_bins); %här lagrar vi alla sekvenser i frekvensplanet
+
+for bin=1:no_bins-1
+    X(:,bin)=fft(x((bin-1)*bin_duration+1:bin*bin_duration,1),nfft); %Om nfft=no_bins blir det bra
+end
 
 %% Här börjar nåt viktigt
 
 %generera 1 kHz
 
 fs=general.fs;
-
-% Duration of the signal (seconds)
-duration = 1;  % Example duration, you can change it as needed
-
-% Time vector
-t = 0:1/fs:duration-1/fs;
-
-% Frequency of the tone (Hz)
-f_tone = 1000;  % 1 kHz tone
-
-% Generate the sinusoidal signal
-x = sin(2*pi*f_tone*t);
-
-nfft=4096;
-
-%x=randn(length(t),1)'; %NOPE WHITE NOISE BITCHES
-
-% Take the Fourier transform
-tone_freq_domain = fft(x,nfft)';
-
-% Frequency axis
-frequencyAxis = linspace(-fs/2, fs/2, nfft);
-tone_freq_domain_shifted=fftshift(x);
-frequencyAxisShifted=linspace(0,fs/2,8000);
-
-
-
- %Plot the magnitude spectrum
-figure;
-plot(frequencyAxis, 10*log10(tone_freq_domain));
-xlabel('Frequency (Hz)');
-ylabel('Magnitude');
-title('Magnitude Spectrum of 1 kHz Tone, shifted');
-grid on;
 
 %Steg 1: separera impulssvaren
 all_impulse_responses_time_domain_zone_1=impulse_response_measured{1,1};
@@ -180,19 +157,29 @@ filter_sound_2=q{2,1};
 bright_mic=5;
 dark_mic=7;
 
+output_bright_zone=zeros(nfft/2,no_bins); %här lagrar vi alla sekvenser i frekvensplanet
+output_dark_zone=zeros(nfft/2,no_bins);
 
-
-output_bright_zone=multiply_with_bins(tone_freq_domain,squeeze(impulse_responses_freq_domain_zone_1(:,bright_mic,:)),filter_sound_1,nfft);
-output_dark_zone=multiply_with_bins(tone_freq_domain,squeeze(impulse_responses_freq_domain_zone_2(:,dark_mic,:)),filter_sound_2,nfft);
-
+soundout_bright = zeros(length(X)*nfft,1); %allokerar en vektor att spara resultatet i
+soundout_dark = zeros(length(X)*nfft,1);
+tic
+for bin=1:no_bins-1
+    output_bright_zone(:,bin)=multiply_with_bins(X(:,bin),squeeze(impulse_responses_freq_domain_zone_1(:,bright_mic,:)),filter_sound_1,nfft);
+    output_dark_zone(:,bin)=multiply_with_bins(X(:,bin),squeeze(impulse_responses_freq_domain_zone_2(:,dark_mic,:)),filter_sound_2,nfft);
+    
+    %ifft
+    soundout_bright((bin-1)*nfft+1:bin*nfft) = ifft(output_bright_zone(:,bin),nfft);
+    soundout_dark((bin-1)*nfft+1:bin*nfft) = ifft(output_dark_zone(:,bin),nfft);
+end
+toc
 
 %%
-sound_out=ifft(output_bright_zone, nfft);
-sound_out_dark=ifft(output_dark_zone, nfft);
+sound(real(soundout_bright),44100*(4096/882));
 
-sound(repmat(real(sound_out),[1 4]),fs);
 %%
-sound(repmat(real(sound_out_dark),[1 4]),fs);
+sound(real(soundout_dark),44100*(4096/882));
+
+
 
 %% Plotta impulssvaren och jämföra
 % hold on
@@ -203,8 +190,8 @@ sound(repmat(real(sound_out_dark),[1 4]),fs);
 
 figure
 hold on
-plot(0:66.66:8000,abs(filter_sound_1(1,:)),'green')
-plot(0:66.66:8000,abs(filter_sound_2(1,:)),'black')
+plot(0:66.66:8000,abs(filter_sound_1(2,:)),'green')
+plot(0:66.66:8000,abs(filter_sound_2(2,:)),'black')
 hold off
 legend(["Bright Zone","Dark Zone"])
 
@@ -214,4 +201,12 @@ hold on
 semilogy(linspace(0,8000,nfft/2),abs(output_bright_zone),'green');
 semilogy(linspace(0,8000,nfft/2),abs(output_dark_zone),'black');
 legend(["Bright Zone", "Dark Zone"])
+hold off
+
+%%
+figure
+indeces=100000:101000;
+hold on
+plot(real(output_dark_zone(indeces)));
+plot(real(output_bright_zone(indeces)));
 hold off

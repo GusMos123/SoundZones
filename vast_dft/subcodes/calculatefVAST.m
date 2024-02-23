@@ -1,4 +1,4 @@
-function [control_fitler, perform, rankcheck,q] = calculatefVAST(general, array, zone, control_fitler, room_impulse_response, direct_room_impulse_response, dummy, bandoption, taroption)
+function [control_fitler, perform, rankcheck,q,q_fvast] = calculatefVAST(general, array, zone, control_fitler, room_impulse_response, direct_room_impulse_response, dummy, bandoption, taroption)
 
 if nargin < 8
     bandoption = 'narrow'; % 'narrow', 'broadindi'
@@ -182,7 +182,7 @@ else
 
     control_fitler.conFilter = q_fvast;
 
-    misfig = true;
+    misfig = false;
     mcenter = round(median(1:number_of_control_points));
     if misfig%figoption
         maxcont = max([10*log10(postAC{1});10*log10(postAC{2})]);
