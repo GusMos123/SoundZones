@@ -79,9 +79,10 @@ control_filter=control_filter{1,1}; %Finns ju 7 st??
 [x,fs]=audioread("dangerzone.mp3");
 
 x=x(:,1);
-nfft=4096;
+
 
 bin_duration=fs/50; %antal sample points som mostvarar 20 ms (ish stationär process)
+nfft=bin_duration;
 no_bins=ceil(length(x)/bin_duration); %antal binns vi behöver
 X=zeros(nfft,no_bins); %här lagrar vi alla sekvenser i frekvensplanet
 
@@ -148,7 +149,8 @@ clear all_impulse_responses_time_domain_zone_1;
 
 filter_sound_1=q{1,1};
 filter_sound_2=q{2,1};
-
+filter_sound_1=ones(size(q{1,1}));
+filter_sound_2=ones(size(q{1,1}));
 
 %% summering för att få sound out (pm) i en mikrofon
 
