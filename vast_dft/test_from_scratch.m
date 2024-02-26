@@ -70,4 +70,4 @@ norm(x(indexes,1)-soundout(indexes))
 
 
 
-plot(indexes,[x(indexes,1) soundout(indexes)])
+plot(indexes,[x(indexes,1)/norm(x(indexes,1)) soundout(indexes)/norm(soundout(indexes))])
