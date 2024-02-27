@@ -4,24 +4,25 @@ clear
 close all;
 
 [x,fs]=audioread("dangerzone.mp3");
+x=x(:,1);
 
-
-
-bin_duration=fs/50; %antal sample points som mostvarar 20 ms (ish stationär process)
+nfft=2^14;
+time_per_segment=1000*nfft/fs
+bin_duration=nfft; %om detta är lika med bin_duration blir det bra
 no_bins=ceil(length(x)/bin_duration); %antal binns vi behöver
-X=zeros(bin_duration,no_bins); %här lagrar vi alla sekvenser i frekvensplanet
+X=zeros(nfft,no_bins); %här lagrar vi alla sekvenser i frekvensplanet
 
 for bin=1:no_bins-1
-    X(:,bin)=fft(x((bin-1)*bin_duration+1:bin*bin_duration,1),bin_duration); %Om nfft=no_bins blir det bra
+    X(:,bin)=fft(x((bin-1)*bin_duration+1:bin*bin_duration,1),nfft); %taking fourier transform
 end
 
 %%
-soundout = zeros(length(X)*bin_duration,1); %allokerar en vektor att spara resultatet i
+soundout = zeros(length(X)*nfft,1); %allokerar en vektor att spara resultatet i
 for bin = 1:no_bins-1
-    soundout((bin-1)*bin_duration+1:bin*bin_duration) = ifft(X(:,bin),bin_duration);
+    soundout((bin-1)*nfft+1:bin*nfft) = ifft(X(:,bin),nfft); %inverstransform
 end
 
-sound(real(soundout),fs) %lyssna på topgun
+sound(real(soundout),fs*nfft/bin_duration) %lyssna på topgun
 
 %%
 indexes=30000:300100;
