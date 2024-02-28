@@ -165,7 +165,7 @@ cvx_begin
 cvx_end
 
 %%
-mic=2; %här lyssnar vi
+mic=1; %här lyssnar vi
 
 X_topgun=fft(x, Ly2);		   % Fast Fourier transform
 X_taylor=fft(xt,Ly2);
