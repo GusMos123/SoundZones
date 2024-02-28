@@ -29,7 +29,7 @@ y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
 
-
+y_distorted=y;
 sound(y,fs);
 
 %%
@@ -38,7 +38,34 @@ indices=1:40000;
 plot([y(indices)/max(abs(y(indices))),x(indices)/max(abs(x(indices)))]);
 legend(["with RIR","original"])
 
+%% Testing super simple filter
+ideal_response=rir(fs, mic, n, 0, rm, src); 
+ideal_response_fft=fft(ideal_response,Ly2);
 
+cvx_solver_settings( 'max_iter', 2 )
+cvx_begin
+  variable Q_start(Ly2,1)
+ minimize(norm(H.*Q_start-ideal_response_fft))
+cvx_end
+
+%% Testing filter in both domains
+Y=X.*Q_start;
+y=real(ifft(Y,Ly2));
+y=y(1:Ly);
+y=conv(y,h);
+y=y(1:Ly);
+y=y/max(abs(y));
+
+q=ifft(Q_start,Ly2);
+q=q(1:Ly/8);
+y2=conv(conv(x,q),h);
+y2=y2(1:Ly);
+y2=y2/max(abs(y2));
+
+
+sound(y2,fs);
+
+diff=y-y2;
 %% Testing 16 speakers and 2 microphones. From now on code is sort of good
 mic=[6 19 1.8; 14 19 1.8;6.5,19,1.8];
 n=5; %
@@ -71,23 +98,24 @@ for speaker=1:length(src)
         H(speaker,microphone,:)=fft(simulated_rir,Ly2);
     end
 end
-%% Listening time! Ok funkar rätt dåligt atm
+%% Listening time!
 selected_mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
-
+y_time_domain=zeros(Ly,1);
 for speaker=1:16
     transformed_rir=squeeze(H(speaker,selected_mic,:));
     Y=Y+X.*transformed_rir;
+    soundout=conv(x,squeeze(h(speaker,selected_mic,:)));
+    y_time_domain=y_time_domain+soundout(1:Ly);
 end
 
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
 
-
-
+y_time_domain=y_time_domain/max(abs(y_time_domain));
 
 sound(y,fs);
 %%
@@ -120,13 +148,15 @@ cvx_end
 
 %%
 
-Q_topgun=Q_start;
+load("filters.mat")
+%Q_topgun=Q_start;
 
 %% Listening time!
-desired_mic=2; %här lyssnar vi
+desired_mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
+
 
 for speaker=1:16
     transformed_rir=squeeze(H(speaker,desired_mic,:));
@@ -165,7 +195,7 @@ cvx_begin
 cvx_end
 
 %%
-mic=1; %här lyssnar vi
+mic=3; %här lyssnar vi
 
 X_topgun=fft(x, Ly2);		   % Fast Fourier transform
 X_taylor=fft(xt,Ly2);
@@ -178,7 +208,7 @@ for speaker=1:16
     transformed_rir=squeeze(H(speaker,mic,:));
     Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
 
-    Effective_filter=Effective_filter+transformed_rir.*Q_topgun(speaker,:)';
+    Effective_filter=Effective_filter+Q_topgun(speaker,:)';
 end
 effective_filter_time_domain=real(ifft(Effective_filter,Ly2));
 effective_filter_time_domain=effective_filter_time_domain(1:1:Ly);
@@ -187,6 +217,51 @@ effective_filter_time_domain=effective_filter_time_domain(1:1:Ly)/max(abs(effect
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
+
+sound(y,fs)
+
+%% Test i tidsdomänen
+q_taylor=zeros(16,round(Ly/2)); % de behöver ej vara så långa
+q_topgun=zeros(16,round(Ly/2));
+y=zeros(482644,1);
+for speaker=1:16
+    q_taylor_temp=real(ifft(Q_taylor(speaker,:),Ly2));
+    q_topgun_temp=real(ifft(Q_topgun(speaker,:),Ly2));
+    q_taylor(speaker,:)=q_taylor_temp(1:1:round(Ly/2));
+    q_topgun(speaker,:)=q_topgun_temp(1:1:round(Ly/2));
+    output_topgun=conv(x,1);
+    output_taylor=conv(xt,1);
+    sound_topgun=conv(output_topgun,squeeze(h(speaker,mic,:)));
+    sound_taylor=conv(output_taylor,squeeze(h(speaker,mic,:)));
+    y=y+[sound_topgun;0]+sound_taylor;
+end
+y=y/max(abs(y));
+
+sound(y,fs)
+
+%% Testar att mixa domäner
+mic=3; %här lyssnar vi
+
+X_topgun=fft(x, Ly2);		   % Fast Fourier transform
+X_taylor=fft(xt,Ly2);
+Y=zeros(size(X));
+output=zeros(16,Ly);
+for speaker=1:16
+   
+    transformed_rir=squeeze(H(speaker,mic,:));
+    Y=Y+X_topgun.*Q_topgun(speaker,:)' + X_taylor.*Q_taylor(speaker,:)';
+    output_temp=real(ifft(Y,Ly2));
+    output_temp=output_temp(1:Ly);
+    output_temp=output_temp/max(abs(output_temp));
+    output(speaker,:)=output_temp;
+end
+
+y=zeros(Ly,1);
+
+for speaker=1:16
+    output=conv(output(speaker,:),squeeze(h(speaker,mic,:)));
+    y=y+output(1:Ly);
+end
 
 sound(y,fs)
 
@@ -200,7 +275,7 @@ y=y/max(abs(y));           % Normalize the output
 sound(y,fs)
 
 %% Possibility to play entire song
-mic=1;
+mic=2;
 x_topgun=audioread("dangerzone.mp3");
 x_topgun=x_topgun(:,1);
 x_topgun=x_topgun(find(abs(x_topgun)>1e-2):end,1);
