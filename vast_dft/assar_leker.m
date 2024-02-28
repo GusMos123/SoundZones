@@ -40,9 +40,9 @@ legend(["with RIR","original"])
 
 
 %% Testing 16 speakers and 2 microphones. From now on code is sort of good
-mic=[6 19 1.8; 14 19 1.8];
+mic=[6 19 1.8; 14 19 1.8;6.5,19,1.8];
 n=5; %
-r=0.8; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
+r=0.15; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
 rm=[20 20 3]; %row vector giving the dimensions of the room.
 src=zeros(16,3); %row vector giving the x,y,z coordinates of the sound source.
 src(:,2:3)=ones;
@@ -110,7 +110,7 @@ H_dark=squeeze(H(:,2,:));
 %% Optimization
 mu=0.3;
 
-cvx_precision('low')
+cvx_solver_settings( 'max_iter', 2 )
 cvx_begin
   
  variable Q_start(16,Ly2)
@@ -123,14 +123,14 @@ cvx_end
 Q_topgun=Q_start;
 
 %% Listening time!
-mic=1; %här lyssnar vi
+desired_mic=2; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
 
 for speaker=1:16
-    transformed_rir=squeeze(H(speaker,mic,:));
-    Y=Y+X.*transformed_rir.*Q_end(speaker,:)';
+    transformed_rir=squeeze(H(speaker,desired_mic,:));
+    Y=Y+X.*transformed_rir.*Q_topgun(speaker,:)';
 end
 
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
@@ -178,7 +178,7 @@ for speaker=1:16
     transformed_rir=squeeze(H(speaker,mic,:));
     Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
 
-     Effective_filter=Effective_filter+transformed_rir.*Q_topgun(speaker,:)';
+    Effective_filter=Effective_filter+transformed_rir.*Q_topgun(speaker,:)';
 end
 effective_filter_time_domain=real(ifft(Effective_filter,Ly2));
 effective_filter_time_domain=effective_filter_time_domain(1:1:Ly);
@@ -191,7 +191,7 @@ y=y/max(abs(y));           % Normalize the output
 sound(y,fs)
 
 %% Lyssna på output från en högtalare
-speaker=4;
+speaker=2;
 Y=X_topgun.*Q_topgun(speaker,:)' + X_taylor.*Q_taylor(speaker,:)';
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
@@ -199,4 +199,44 @@ y=y/max(abs(y));           % Normalize the output
 
 sound(y,fs)
 
+%% Possibility to play entire song
+mic=1;
+x_topgun=audioread("dangerzone.mp3");
+x_topgun=x_topgun(:,1);
+x_topgun=x_topgun(find(abs(x_topgun)>1e-2):end,1);
 
+x_taylor=audioread("blankspace.mp3");
+x_taylor=x_taylor(:,1);
+x_taylor=x_taylor(find(abs(x_taylor)>1e-2):end,1);
+
+%dela upp problemet
+bin_length=Ly;
+no_bins=floor(min(length(x_taylor),length(x_topgun))/bin_length);
+%no_bins=5;
+
+y=zeros(bin_length*no_bins,1);
+index=find(abs(h)>1e-3,1);
+
+for bin=1:no_bins
+    indices=(bin-1)*bin_length+1:bin*bin_length;
+    % Find smallest power of 2 that is > Ly
+    X_topgun=fft(x_topgun(indices), Ly2);		   % Fast Fourier transform
+    X_taylor=fft(x_taylor(indices), Ly2);	
+    
+    Y=zeros(size(X));
+
+    for speaker=1:16
+   
+        transformed_rir=squeeze(H(speaker,mic,:));
+        Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
+
+    end
+
+    y_temp=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
+    y_temp=y_temp(1:1:Ly);               % Take just the first N elements
+    y_temp=y_temp/max(abs(y_temp));           % Normalize the output
+  
+    y(indices)=y_temp(1:Ly);
+end
+
+sound(y,fs)
