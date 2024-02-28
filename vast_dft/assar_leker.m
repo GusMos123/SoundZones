@@ -171,10 +171,18 @@ X_topgun=fft(x, Ly2);		   % Fast Fourier transform
 X_taylor=fft(xt,Ly2);
 Y=zeros(size(X));
 
+Effective_filter=zeros(Ly2,1);
+
 for speaker=1:16
+   
     transformed_rir=squeeze(H(speaker,mic,:));
     Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
+
+     Effective_filter=Effective_filter+transformed_rir.*Q_topgun(speaker,:)';
 end
+effective_filter_time_domain=real(ifft(Effective_filter,Ly2));
+effective_filter_time_domain=effective_filter_time_domain(1:1:Ly);
+effective_filter_time_domain=effective_filter_time_domain(1:1:Ly)/max(abs(effective_filter_time_domain));
 
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
