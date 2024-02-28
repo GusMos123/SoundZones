@@ -38,7 +38,7 @@ indices=1:40000;
 plot([y(indices)/max(abs(y(indices))),x(indices)/max(abs(x(indices)))]);
 legend(["with RIR","original"])
 
-%% Trying out a filter to just compensate for the issues of the room FUNKAR EJ!
+%% Trying out a filter to just compensate for the issues of the room
 
 %find when RIR reaches speaker
 time_delay=find(abs(h)>1e-2,1);
@@ -81,10 +81,16 @@ figure
 plot([desired_sound/max(abs(desired_sound)), filtered_sound(1:length(desired_sound))])
 legend(["Desired Sound", "Output with RIR and filtering"])
 
+
+
+% ------------------------------------------------------------
 %% Testing 16 speakers and 2 microphones. From now on code is sort of good
+% ------------------------------------------------------------
+
+
 mic=[6 19 1.8; 14 19 1.8];
 n=5; %
-r=0.8; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
+r=1; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
 rm=[20 20 3]; %row vector giving the dimensions of the room.
 src=zeros(16,3); %row vector giving the x,y,z coordinates of the sound source.
 src(:,2:3)=ones;
@@ -105,14 +111,16 @@ hold off
 %% Generate RIRs
 
 H=zeros(length(src(:,1)),length(mic(:,1)),Ly2);
+h=zeros(length(src(:,1)),length(mic(:,1)),Ly2);
 for speaker=1:length(src)
     for microphone=1:length(mic(:,1))
         simulated_rir=rir(fs,mic(microphone,:),n,r,rm,src(speaker,:));
-        H(speaker,microphone,:)=fft(simulated_rir,Ly2);
+        h(speaker,microphone,1:length(simulated_rir))=simulated_rir;
+        H(speaker,microphone,:)=fft(h(speaker,microphone,:),Ly2);
     end
 end
 %% Listening time! Ok funkar rätt dåligt atm
-mic=1; %här lyssnar vi
+mic=2; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
@@ -126,11 +134,135 @@ y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
 
-
-
-
-sound(y,fs);
+sound(y, fs)
 %%
 indices=1:40000;
 plot([x(indices)/max(abs(x(indices))),y(indices)/max(abs(y(indices)))]);
 legend(["original", "with RIR"])
+
+%% Gustav
+
+%params
+mu = 0.3;
+Q_vec = zeros(16, Ly2);
+
+for speaker=1:16
+    Q=ones(Ly2,1);
+    transformed_rir=squeeze(H(speaker,1,:));
+    XH1=X.*transformed_rir;
+    XH1=XH1/max(abs(XH1));
+    
+    transformed_rir=squeeze(H(speaker,2,:));
+    XH2=X.*transformed_rir;
+    XH2=XH2/max(abs(XH2));
+    
+    time_delay=find(abs(h(speaker,1,:))>1e-2,1); %hitta time delay till mic 1
+    desired_sound=[zeros(time_delay,1);x];
+    desired_sound_fft=fft(desired_sound,Ly2);
+    desired_sound_fft=desired_sound_fft/max(abs(desired_sound_fft));
+    fprintf("Before opt: %f \n", norm(desired_sound_fft-XH1.*Q) + mu * norm(-XH2.*Q));
+    
+    cvx_begin
+        variable Q(Ly2)
+        minimize(norm(desired_sound_fft-XH1.*Q) + mu * norm(-XH2.*Q))
+    cvx_end
+    Q_vec(speaker,:) = Q;
+    speaker
+end
+
+%% Lyssna
+
+mic=1; %här lyssnar vi
+
+X=fft(x, Ly2);		   % Fast Fourier transform
+Y=zeros(size(X));
+
+for speaker=1:16
+    transformed_rir=squeeze(H(speaker,mic,:));
+    Y=Y+X.*transformed_rir.*Q(speaker,:)';
+end
+
+y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
+y=y(1:1:Ly);               % Take just the first N elements
+y=y/max(abs(y));           % Normalize the output
+%y=y*10^9;
+sound(y, fs)
+
+%% Lyssna på vad en högtalare spelar
+speaker=11;
+transformed_rir=squeeze(H(speaker,mic,:));
+Y=X.*transformed_rir;
+y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
+y=y(1:1:Ly);               % Take just the first N elements
+y=y/max(abs(y));           % Normalize the output
+
+sound(y, fs)
+
+
+
+%%
+hold on
+for i = 1:16
+    plot(Q(i,:))
+end
+
+
+%% Köra allt i ett svep
+
+%params
+mu = 5;
+
+XH1 = zeros(16,Ly2);
+XH2 = zeros(16,Ly2);
+desired_sound_fft = zeros(16,Ly2);
+
+for speaker=1:16
+    transformed_rir=squeeze(H(speaker,1,:));
+    XH1(speaker, :)=X.*transformed_rir;
+    XH1(speaker, :)=XH1(speaker, :)/max(abs(XH1(speaker, :)));
+    
+    transformed_rir=squeeze(H(speaker,2,:));
+    XH2(speaker, :)=X.*transformed_rir;
+    XH2(speaker, :)=XH2(speaker, :)/max(abs(XH2(speaker, :)));
+    
+    time_delay=find(abs(h(speaker,1,:))>1e-2,1); %hitta time delay till mic 1
+    desired_sound=[zeros(time_delay,1);x];
+    desired_sound_fft(speaker, :)=fft(desired_sound,Ly2);
+    desired_sound_fft(speaker, :)=desired_sound_fft(speaker, :)/max(abs(desired_sound_fft(speaker, :)));
+    
+end
+
+cvx_begin
+    variable Q(16, Ly2)
+    minimize(sum(sum(abs(desired_sound_fft-XH1.*Q) + mu * abs(-XH2.*Q))))
+cvx_end
+
+%% Köra allt i ett svep 2
+
+%params
+mu = 1;
+
+XH1 = zeros(16,Ly2);
+XH2 = zeros(16,Ly2);
+desired_sound_fft = zeros(16,Ly2);
+
+for speaker=1:16
+    transformed_rir=squeeze(H(speaker,1,:));
+    XH1(speaker, :)=X.*transformed_rir;
+    XH1(speaker, :)=XH1(speaker, :)/max(abs(XH1(speaker, :)));
+    
+    transformed_rir=squeeze(H(speaker,2,:));
+    XH2(speaker, :)=X.*transformed_rir;
+    XH2(speaker, :)=XH2(speaker, :)/max(abs(XH2(speaker, :)));
+    
+    time_delay=find(abs(h(speaker,1,:))>1e-2,1); %hitta time delay till mic 1
+    desired_sound=[zeros(time_delay,1);x];
+    desired_sound_fft(speaker, :)=fft(desired_sound,Ly2);
+    desired_sound_fft(speaker, :)=desired_sound_fft(speaker, :)/max(abs(desired_sound_fft(speaker, :)));
+    
+end
+
+cvx_begin
+    variable Q2(16, Ly2)
+    minimize((desired_sound_fft-XH1.*Q2) + mu * (-XH2.*Q2))
+cvx_end
