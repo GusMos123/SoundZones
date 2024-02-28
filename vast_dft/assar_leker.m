@@ -72,13 +72,13 @@ for speaker=1:length(src)
     end
 end
 %% Listening time! Ok funkar rätt dåligt atm
-mic=1; %här lyssnar vi
+selected_mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
 
 for speaker=1:16
-    transformed_rir=squeeze(H(speaker,mic,:));
+    transformed_rir=squeeze(H(speaker,selected_mic,:));
     Y=Y+X.*transformed_rir;
 end
 
@@ -104,12 +104,15 @@ title("Ideal room impulse reponse")
 
 ideal_response_fft_bright=fft(ideal_response,Ly2);
 
-H_bright=squeeze(H(:,1,:));
+H_bright=squeeze(H(:,1,:)); %choosing bright zone for top gun
 H_dark=squeeze(H(:,2,:));
 
 %% Optimization
 mu=0.3;
+
+cvx_precision('low')
 cvx_begin
+  
  variable Q_start(16,Ly2)
  minimize(norm(sum(H_bright.*Q_start,1)' -ideal_response_fft_bright) + mu*norm(sum(H_dark.*Q_start,1)))
 
@@ -117,10 +120,10 @@ cvx_end
 
 %%
 
-Q_end=Q_start;
+Q_topgun=Q_start;
 
 %% Listening time!
-mic=2; %här lyssnar vi
+mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
@@ -130,6 +133,58 @@ for speaker=1:16
     Y=Y+X.*transformed_rir.*Q_end(speaker,:)';
 end
 
+y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
+y=y(1:1:Ly);               % Take just the first N elements
+y=y/max(abs(y));           % Normalize the output
+
+sound(y,fs)
+
+%% Now we optimize for Taylor Swift
+[xt,fs]=audioread("blankspace.mp3");
+xt=xt(:,1);
+xt=xt(find(abs(xt)>1e-3):end);
+xt=xt(fs*5:fs*10);
+%% Filter design time!
+ideal_response=rir(fs, mic(1,:), n, 0, rm, src(8,:)); 
+
+figure
+plot(ideal_response);
+title("Ideal room impulse reponse")
+
+ideal_response_fft_bright=fft(ideal_response,Ly2);
+
+H_bright=squeeze(H(:,2,:)); %bright zone for swift is zone 2
+H_dark=squeeze(H(:,1,:));
+
+%% Optimization
+mu=0.3;
+cvx_begin
+ variable Q_taylor(16,Ly2)
+ minimize(norm(sum(H_bright.*Q_taylor,1)' -ideal_response_fft_bright) + mu*norm(sum(H_dark.*Q_taylor,1)))
+
+cvx_end
+
+%%
+mic=2; %här lyssnar vi
+
+X_topgun=fft(x, Ly2);		   % Fast Fourier transform
+X_taylor=fft(xt,Ly2);
+Y=zeros(size(X));
+
+for speaker=1:16
+    transformed_rir=squeeze(H(speaker,mic,:));
+    Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
+end
+
+y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
+y=y(1:1:Ly);               % Take just the first N elements
+y=y/max(abs(y));           % Normalize the output
+
+sound(y,fs)
+
+%% Lyssna på output från en högtalare
+speaker=4;
+Y=X_topgun.*Q_topgun(speaker,:)' + X_taylor.*Q_taylor(speaker,:)';
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
