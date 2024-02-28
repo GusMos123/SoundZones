@@ -18,7 +18,7 @@ h=rir(fs, mic, n, r, rm, src);
 x=x(:,1); % vill bara ha ena spåret
 
 x=x(find(abs(x)>1e-3,1):end); %tar bort lite onödigt ljud i början
-x=x(1:fs*5);
+x=x(1:fs*5); %tar första 5 sekunderna
 
 Ly=length(x)+length(h)-1;  % 
 Ly2=pow2(nextpow2(Ly));    % Find smallest power of 2 that is > Ly
@@ -46,6 +46,7 @@ time_delay=find(abs(h)>1e-2,1);
 desired_sound=[zeros(time_delay,1);x];
 desired_sound_fft=fft(desired_sound,Ly2);
 desired_sound_fft=desired_sound_fft/max(abs(desired_sound_fft));
+
 Q=zeros(Ly2,1);
 
 XH=X.*H;
@@ -83,7 +84,7 @@ legend(["Desired Sound", "Output with RIR and filtering"])
 %% Testing 16 speakers and 2 microphones. From now on code is sort of good
 mic=[6 19 1.8; 14 19 1.8];
 n=5; %
-r=0.15; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
+r=0.8; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
 rm=[20 20 3]; %row vector giving the dimensions of the room.
 src=zeros(16,3); %row vector giving the x,y,z coordinates of the sound source.
 src(:,2:3)=ones;
@@ -111,14 +112,16 @@ for speaker=1:length(src)
     end
 end
 %% Listening time! Ok funkar rätt dåligt atm
-mic=1;
+mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
+
 for speaker=1:16
     transformed_rir=squeeze(H(speaker,mic,:));
     Y=Y+X.*transformed_rir;
 end
+
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
