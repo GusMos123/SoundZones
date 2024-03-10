@@ -63,11 +63,11 @@ y2=y2(1:Ly);
 y2=y2/max(abs(y2));
 
 
-sound(y2,fs);
+sound(y,fs);
 
 diff=y-y2;
 %% Testing 16 speakers and 2 microphones. From now on code is sort of good
-mic=[6 19 1.8; 14 19 1.8;6.5,19,1.8];
+mic=[6 19 1.8; 14 19 1.8;6.2,19,1.8];
 n=5; %
 r=0.15; %reflection coefficient for the walls, in general -1<R<1. nära 0 ger ingen reflektion
 rm=[20 20 3]; %row vector giving the dimensions of the room.
@@ -89,17 +89,17 @@ hold off
 
 %% Generate RIRs
 
-H=zeros(length(src(:,1)),length(mic(:,1)),Ly2);
-h=zeros(length(src(:,1)),length(mic(:,1)),Ly2);
-for speaker=1:length(src)
-    for microphone=1:length(mic(:,1))
-        simulated_rir=rir(fs,mic(microphone,:),n,r,rm,src(speaker,:));
+H=zeros(length(mic(:,1)),length(src(:,1)),Ly2);
+h=zeros(length(mic(:,1)),length(src(:,1)),Ly2);
+for microphone=1:length(mic(:,1))
+    for speaker=1:length(src)
+        simulated_rir=rir(fs,mic(microphone,:),n,r,rm,src(speaker,:))';
         h(speaker,microphone,1:length(simulated_rir))=simulated_rir;
         H(speaker,microphone,:)=fft(simulated_rir,Ly2);
     end
 end
 %% Listening time!
-selected_mic=1; %här lyssnar vi
+selected_mic=3; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
@@ -160,7 +160,8 @@ Y=zeros(size(X));
 
 for speaker=1:16
     transformed_rir=squeeze(H(speaker,desired_mic,:));
-    Y=Y+X.*transformed_rir.*Q_topgun(speaker,:)';
+    filter_component=reshape(Q_topgun(speaker,:),[Ly2 1]);
+    Y=Y+X.*filter_component.*transformed_rir;
 end
 
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
@@ -206,9 +207,11 @@ Effective_filter=zeros(Ly2,1);
 for speaker=1:16
    
     transformed_rir=squeeze(H(speaker,mic,:));
-    Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
+    topgun_filter=reshape(Q_topgun(speaker,:),[Ly2 1]);
+    taylor_filter=reshape(Q_taylor(speaker,:),[Ly2 1]);
+    Y=Y+X_topgun.*transformed_rir.*topgun_filter + X_taylor.*transformed_rir.*taylor_filter;
 
-    Effective_filter=Effective_filter+Q_topgun(speaker,:)';
+    Effective_filter=Effective_filter+topgun_filter;
 end
 effective_filter_time_domain=real(ifft(Effective_filter,Ly2));
 effective_filter_time_domain=effective_filter_time_domain(1:1:Ly);
@@ -240,16 +243,18 @@ y=y/max(abs(y));
 sound(y,fs)
 
 %% Testar att mixa domäner
-mic=3; %här lyssnar vi
+mic=1; %här lyssnar vi
 
 X_topgun=fft(x, Ly2);		   % Fast Fourier transform
 X_taylor=fft(xt,Ly2);
 Y=zeros(size(X));
 output=zeros(16,Ly);
 for speaker=1:16
-   
+    topgun_filter=reshape(Q_topgun(speaker,:),[Ly2 1]);
+    taylor_filter=reshape(Q_taylor(speaker,:),[Ly2 1]);
+
     transformed_rir=squeeze(H(speaker,mic,:));
-    Y=Y+X_topgun.*Q_topgun(speaker,:)' + X_taylor.*Q_taylor(speaker,:)';
+    Y=Y+X_topgun.*topgun_filter + X_taylor.*taylor_filter;
     output_temp=real(ifft(Y,Ly2));
     output_temp=output_temp(1:Ly);
     output_temp=output_temp/max(abs(output_temp));
@@ -267,7 +272,7 @@ sound(y,fs)
 
 %% Lyssna på output från en högtalare
 speaker=2;
-Y=X_topgun.*Q_topgun(speaker,:)' + X_taylor.*Q_taylor(speaker,:)';
+Y=X_topgun.*topgun_filter + X_taylor.*taylor_filter;
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
 y=y/max(abs(y));           % Normalize the output
@@ -301,9 +306,10 @@ for bin=1:no_bins
     Y=zeros(size(X));
 
     for speaker=1:16
-   
+        topgun_filter=reshape(Q_topgun(speaker,:),[Ly2 1]);
+        taylor_filter=reshape(Q_taylor(speaker,:),[Ly2 1]);
         transformed_rir=squeeze(H(speaker,mic,:));
-        Y=Y+X_topgun.*transformed_rir.*Q_topgun(speaker,:)' + X_taylor.*transformed_rir.*Q_taylor(speaker,:)';
+        Y=Y+X_topgun.*transformed_rir.*topgun_filter + X_taylor.*transformed_rir.*taylor_filter;
 
     end
 
