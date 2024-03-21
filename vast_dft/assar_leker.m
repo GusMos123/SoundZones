@@ -99,7 +99,7 @@ for microphone=1:length(mic(:,1))
     end
 end
 %% Listening time!
-selected_mic=3; %här lyssnar vi
+selected_mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
@@ -124,7 +124,7 @@ plot([x(indices)/max(abs(x(indices))),y(indices)/max(abs(y(indices)))]);
 legend(["original", "with RIR"])
 
 %% Filter design time!
-ideal_response=rir(fs, mic(1,:), n, 0, rm, src(8,:)); 
+ideal_response=rir(fs, mic(1,:), n, 0, rm, src(16,:)); 
 
 figure
 plot(ideal_response);
@@ -152,7 +152,7 @@ load("filters.mat")
 %Q_topgun=Q_start;
 
 %% Listening time!
-desired_mic=1; %här lyssnar vi
+desired_mic=2; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
@@ -161,7 +161,7 @@ Y=zeros(size(X));
 for speaker=1:16
     transformed_rir=squeeze(H(speaker,desired_mic,:));
     filter_component=reshape(Q_topgun(speaker,:),[Ly2 1]);
-    Y=Y+X.*filter_component.*transformed_rir;
+    Y=Y+X.*transformed_rir.*filter_component;
 end
 
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
@@ -196,7 +196,7 @@ cvx_begin
 cvx_end
 
 %%
-mic=3; %här lyssnar vi
+mic=1; %här lyssnar vi
 
 X_topgun=fft(x, Ly2);		   % Fast Fourier transform
 X_taylor=fft(xt,Ly2);
@@ -224,6 +224,7 @@ y=y/max(abs(y));           % Normalize the output
 sound(y,fs)
 
 %% Test i tidsdomänen
+
 q_taylor=zeros(16,round(Ly/2)); % de behöver ej vara så långa
 q_topgun=zeros(16,round(Ly/2));
 y=zeros(482644,1);
@@ -243,7 +244,7 @@ y=y/max(abs(y));
 sound(y,fs)
 
 %% Testar att mixa domäner
-mic=1; %här lyssnar vi
+mic=2; %här lyssnar vi
 
 X_topgun=fft(x, Ly2);		   % Fast Fourier transform
 X_taylor=fft(xt,Ly2);
