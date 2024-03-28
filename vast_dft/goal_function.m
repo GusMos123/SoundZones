@@ -1,6 +1,6 @@
 function [out] = goal_function(Q, H_bright, H_dark, goal, mu)
 
-[num_microphones_per_zone,b,c] = size(H_bright);
+[num_microphones_per_zone,~,~] = size(H_bright);
 out = 0;
 
 %Bright zone:

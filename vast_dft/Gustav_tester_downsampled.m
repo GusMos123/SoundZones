@@ -59,7 +59,7 @@ end
 %%
 plot(abs(squeeze(H(1,1,:))'))
 %% Listening time!
-selected_mic=4; %här lyssnar vi
+selected_mic=1; %här lyssnar vi
 
 X=fft(x, Ly2);		   % Fast Fourier transform
 Y=zeros(size(X));
@@ -86,6 +86,9 @@ plot([x(indices)/max(abs(x(indices))),y(indices)/max(abs(y(indices)))]);
 legend(["original", "with RIR"])
 
 %% Filter design time!
+
+%Här måste man välja den mic i bright zone som är längst bort ifrån
+%högtalaren längst bort.
 ideal_response=rir(fs, mic(1,:), n, 0, rm, src(16,:)); 
 
 figure
@@ -104,7 +107,6 @@ cvx_solver_settings( 'max_iter', 2 )
 cvx_begin
   
  variable Q_start(16,Ly2) %ett filter per högtalare (16 st)
- %minimize( norm( mean( sum( H.*reshape( repmat( Q_start, [2*mics_per_zone,1,1]), size(H))-reshape(repmat(ideal_response_fft, [2*mics_per_zone, speaker, 1]), size(H)) ) ) ) )
  minimize(goal_function(Q_start, H_bright, H_dark, ideal_response_fft_bright, mu)) %lite oklart med vilka inputs...
 cvx_end
 
@@ -140,7 +142,7 @@ y_time=real(y_time);
 
 y_time=y_time*500;
 
-sound(y_time,fs)
+sound(y,fs)
 
 
 
