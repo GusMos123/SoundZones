@@ -143,7 +143,7 @@ legend(["original", "with RIR"])
 %% Gustav
 
 %params
-mu = 0.3;
+mu = 3;
 Q_vec = zeros(16, Ly2);
 
 for speaker=1:16
@@ -184,7 +184,7 @@ end
 
 y=real(ifft(Y, Ly2));      % Inverse fast Fourier transform
 y=y(1:1:Ly);               % Take just the first N elements
-y=y/max(abs(y));           % Normalize the output
+%y=y/max(abs(y));           % Normalize the output
 %y=y*10^9;
 sound(y, fs)
 
@@ -210,7 +210,7 @@ end
 %% Köra allt i ett svep
 
 %params
-mu = 5;
+mu = 1;
 
 XH1 = zeros(16,Ly2);
 XH2 = zeros(16,Ly2);
@@ -229,12 +229,12 @@ for speaker=1:16
     desired_sound=[zeros(time_delay,1);x];
     desired_sound_fft(speaker, :)=fft(desired_sound,Ly2);
     desired_sound_fft(speaker, :)=desired_sound_fft(speaker, :)/max(abs(desired_sound_fft(speaker, :)));
-    
+
 end
 
 cvx_begin
     variable Q(16, Ly2)
-    minimize(sum(sum(abs(desired_sound_fft-XH1.*Q) + mu * abs(-XH2.*Q))))
+    minimize(sum(sum(abs(desired_sound_fft-XH1.*Q) + mu * abs(XH2.*Q))))
 cvx_end
 
 %% Köra allt i ett svep 2
